@@ -114,6 +114,17 @@ class ClientProjectForm(forms.Form):
         })
     )
     
+    # Project Deadline
+    deadline = forms.DateField(
+        label='Project Deadline',
+        required=True,
+        widget=forms.DateInput(attrs={
+            'class': 'form-control',
+            'type': 'date',
+            'id': 'deadline_field'
+        })
+    )
+    
     # File Upload (Optional)
     file_upload = forms.FileField(
         label='Upload File (Optional)',

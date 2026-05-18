@@ -171,9 +171,11 @@
         <h2 class="fw-bold mb-1 text-main">Clients Directory</h2>
         <p class="text-muted small mb-0">Manage all clients, organizations, and linked projects in one system.</p>
     </div>
+    {% if user.profile.role == 'admin' or user.profile.role == 'project_manager' %}
     <button class="btn btn-primary d-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#newClientModal">
         <i class="fas fa-user-plus"></i> New Client
     </button>
+    {% endif %}
 </div>
 
 <!-- Search & Filters Container -->
@@ -723,7 +725,7 @@
                                     <span class="x-small text-muted">${m.created_at}</span>
                                 </div>
                                 <div class="x-small text-muted mb-2"><i class="fas fa-folder-open me-1"></i>Project: ${m.project_title}</div>
-                                <p class="small text-main mb-0 style="white-space: pre-wrap;">${m.content}</p>
+                                <p class="small text-main mb-0" style="white-space: pre-wrap;">${m.content}</p>
                             </div>
                         </div>
                     `).join('');

@@ -1,10 +1,18 @@
 {% extends 'base.html' %}
+{% load custom_filters %}
 
 {% block title %}Interactive Calendar | Workspace{% endblock %}
 
 {% block content %}
 <!-- Include FullCalendar v6.1.11 Global Bundle -->
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h3 class="fw-bold mb-0">Project Calendar</h3>
+        <p class="text-muted small mb-0">Monitor upcoming project and task deadlines</p>
+    </div>
+</div>
 
 <style>
     :root {
@@ -128,6 +136,11 @@
     .toast-notification.show {
         transform: translateY(0);
     }
+    .calendar-events-container {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
 </style>
 
 <!-- Floating Micro-Toast for alerts -->
@@ -163,28 +176,28 @@
         <!-- Calendar Legend Card -->
         <div class="card border-0 shadow-sm p-4 mb-4" style="border-radius: 16px; border: 1px solid var(--border-color) !important;">
             <h6 class="fw-bold text-main mb-3"><i class="fas fa-palette text-muted me-2"></i>Event Colors</h6>
-            <div class="d-flex flex-column gap-2.5">
-                <div class="d-flex align-items-center gap-2.5">
+            <div class="d-flex flex-column gap-2">
+                <div class="d-flex align-items-center gap-2">
                     <span class="legend-indicator" style="background-color: #4f46e5;"></span>
                     <span class="small fw-semibold text-main">Project Deadlines</span>
                 </div>
-                <div class="d-flex align-items-center gap-2.5">
+                <div class="d-flex align-items-center gap-2">
                     <span class="legend-indicator" style="background-color: #db2777;"></span>
                     <span class="small fw-semibold text-main">Team Meetings</span>
                 </div>
-                <div class="d-flex align-items-center gap-2.5">
+                <div class="d-flex align-items-center gap-2">
                     <span class="legend-indicator" style="background-color: #2563eb;"></span>
                     <span class="small fw-semibold text-main">Tasks: In Progress</span>
                 </div>
-                <div class="d-flex align-items-center gap-2.5">
+                <div class="d-flex align-items-center gap-2">
                     <span class="legend-indicator" style="background-color: #16a34a;"></span>
                     <span class="small fw-semibold text-main">Tasks: Completed</span>
                 </div>
-                <div class="d-flex align-items-center gap-2.5">
+                <div class="d-flex align-items-center gap-2">
                     <span class="legend-indicator" style="background-color: #ea580c;"></span>
                     <span class="small fw-semibold text-main">Tasks: In Review</span>
                 </div>
-                <div class="d-flex align-items-center gap-2.5">
+                <div class="d-flex align-items-center gap-2">
                     <span class="legend-indicator" style="background-color: #64748b;"></span>
                     <span class="small fw-semibold text-main">Tasks: To Do</span>
                 </div>
@@ -196,7 +209,7 @@
             <h6 class="fw-bold text-main mb-3"><i class="fas fa-bell text-muted me-2"></i>Upcoming Deadlines</h6>
             <div class="d-flex flex-column gap-3">
                 {% for project in projects|slice:":3" %}
-                <div class="p-2.5 bg-light rounded-3 d-flex justify-content-between align-items-center border-0">
+                <div class="p-2 bg-light rounded-3 d-flex justify-content-between align-items-center border-0">
                     <div>
                         <strong class="text-main x-small d-block text-truncate" style="max-width: 130px;">{{ project.title }}</strong>
                         <span class="text-muted x-small">Project Deadline</span>
@@ -209,7 +222,7 @@
 
                 {% for task in tasks|slice:":5" %}
                 {% if task.status != 'done' %}
-                <div class="p-2.5 bg-light rounded-3 d-flex justify-content-between align-items-center border-0">
+                <div class="p-2 bg-light rounded-3 d-flex justify-content-between align-items-center border-0">
                     <div>
                         <strong class="text-main x-small d-block text-truncate" style="max-width: 130px;">{{ task.title }}</strong>
                         <span class="text-muted x-small">Task Deadline</span>
@@ -326,7 +339,7 @@
 
         calendar = new FullCalendar.Calendar(calendarEl, {
             initialView: 'dayGridMonth',
-            editable: true, // ENABLES DRAG & DROP deadliness rescheduling!
+            editable: true, // ENABLES DRAG & DROP deadlines rescheduling!
             headerToolbar: {
                 left: 'title',
                 center: 'dayGridMonth,timeGridWeek,listMonth',

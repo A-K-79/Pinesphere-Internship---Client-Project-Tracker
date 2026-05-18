@@ -74,7 +74,7 @@
             color: #4b5563;
             margin-bottom: 0.5rem;
             font-size: 0.85rem;
-            text-uppercase: uppercase;
+            text-transform: uppercase;
             letter-spacing: 0.5px;
         }
 
@@ -180,10 +180,10 @@
                                     </div>
                                 </div>
                             </div>
-
+                            
                             <hr>
 
-                            <!-- Project Information Section -->
+                            <!-- Project Details Section -->
                             <div class="mb-4">
                                 <h5 class="section-title">
                                     <i class="fas fa-briefcase"></i> Project Details
@@ -195,6 +195,29 @@
                                         {% if form.project_title.errors %}
                                             <div class="text-danger small mt-1">
                                                 {% for error in form.project_title.errors %}
+                                                    {{ error }}
+                                                {% endfor %}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <hr>
+
+                            <!-- Project Deadline Section -->
+                            <div class="mb-4">
+                                <h5 class="section-title">
+                                    <i class="fas fa-calendar-check"></i> Project Deadline
+                                </h5>
+                                <div class="row g-3">
+                                    <div class="col-12">
+                                        <label class="form-label">Select Deadline Date</label>
+                                        <p class="text-muted small mb-2"><i class="fas fa-info-circle"></i> Deadline must be at least 1.5 months from today</p>
+                                        {{ form.deadline }}
+                                        {% if form.deadline.errors %}
+                                            <div class="text-danger small mt-1">
+                                                {% for error in form.deadline.errors %}
                                                     {{ error }}
                                                 {% endfor %}
                                             </div>
@@ -248,5 +271,36 @@
             </div>
         </div>
     </main>
+
+    <script>
+        // Set minimum deadline date to 1.5 months (45 days) from today
+        document.addEventListener('DOMContentLoaded', function() {
+            const deadlineField = document.getElementById('deadline_field');
+            if (deadlineField) {
+                // Calculate minimum date: today + 45 days
+                const today = new Date();
+                const minDate = new Date(today);
+                minDate.setDate(minDate.getDate() + 45);
+                
+                // Format date as YYYY-MM-DD for the input field
+                const year = minDate.getFullYear();
+                const month = String(minDate.getMonth() + 1).padStart(2, '0');
+                const date = String(minDate.getDate()).padStart(2, '0');
+                const minDateString = `${year}-${month}-${date}`;
+                
+                deadlineField.setAttribute('min', minDateString);
+                
+                // Add validation on form submission
+                const form = deadlineField.closest('form');
+                form.addEventListener('submit', function(e) {
+                    const selectedDate = new Date(deadlineField.value);
+                    if (selectedDate < minDate) {
+                        e.preventDefault();
+                        alert(`Deadline must be at least 1.5 months from today (minimum: ${minDateString})`);
+                    }
+                });
+            }
+        });
+    </script>
 </body>
 </html>

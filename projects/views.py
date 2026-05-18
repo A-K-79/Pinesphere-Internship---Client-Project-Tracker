@@ -3,9 +3,10 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth import login, authenticate, logout
 from django.contrib.auth.forms import AuthenticationForm
 from django.db.models import Count, Q
-from .models import Client, Project, Task, Notification, Report, Message, UserProfile, ProjectFile, Feedback
+from .models import Client, Project, Task, Notification, Report, Message, Team, UserProfile, ProjectFile, Feedback, Meeting
 from .forms import SignUpForm, ProjectForm, TaskForm, ReportForm, FeedbackForm, ClientProjectForm
 from datetime import date, datetime
+from django.utils.dateparse import parse_datetime, parse_date
 from django.contrib.auth.models import User
 from django.template.loader import get_template, TemplateDoesNotExist
 from django.views.decorators.http import require_POST
@@ -277,7 +278,7 @@ def client_form(request):
                 description='',
                 client=client,
                 manager=request.user,
-                deadline='2099-12-31'  # Default deadline, can be updated later
+                deadline=form.cleaned_data['deadline']
             )
             project.save()
             
@@ -347,7 +348,6 @@ def approve_report(request, pk):
 # Calendar and Messages
 @login_required
 def calendar_view(request):
-    from .models import Meeting
     user_role = request.user.profile.role
     if user_role == 'project_manager':
         projects = Project.objects.filter(manager=request.user)
@@ -356,190 +356,7 @@ def calendar_view(request):
     else:
         projects = Project.objects.all()
         tasks = Task.objects.all()
-        meetings = Meeting.objects.all()
-    return render(request, 'projects/calendar.html', {'projects': projects, 'tasks': tasks, 'meetings': meetings})
-
-@login_required
-def calendar_events_json(request):
-    from .models import Meeting
-    user_role = request.user.profile.role
-    if user_role == 'project_manager':
-        projects = Project.objects.filter(manager=request.user)
-        tasks = Task.objects.filter(project__manager=request.user)
-        meetings = Meeting.objects.filter(Q(project__manager=request.user) | Q(organizer=request.user))
-    else:
-        projects = Project.objects.all()
-        tasks = Task.objects.all()
-        meetings = Meeting.objects.all()
-        
-    events = []
-    
-    # 1. Project Deadlines
-    for p in projects:
-        if p.deadline:
-            events.append({
-                'id': f'project_{p.id}',
-                'title': f'🏁 Project: {p.title}',
-                'start': p.deadline.strftime('%Y-%m-%d'),
-                'allDay': True,
-                'backgroundColor': '#4f46e5',
-                'borderColor': '#4f46e5',
-                'extendedProps': {
-                    'type': 'project',
-                    'status': p.get_status_display(),
-                    'priority': p.get_priority_display() if hasattr(p, 'get_priority_display') else 'N/A',
-                    'client': p.client.name,
-                    'manager': p.manager.get_full_name() or p.manager.username if p.manager else 'Unassigned'
-                }
-            })
-            
-    # 2. Task Deadlines
-    for t in tasks:
-        if t.deadline:
-            color = '#64748b'
-            if t.status == 'in_progress':
-                color = '#2563eb'
-            elif t.status == 'review':
-                color = '#ea580c'
-            elif t.status == 'done':
-                color = '#16a34a'
-                
-            events.append({
-                'id': f'task_{t.id}',
-                'title': f'📋 Task: {t.title}',
-                'start': t.deadline.strftime('%Y-%m-%d'),
-                'allDay': True,
-                'backgroundColor': color,
-                'borderColor': color,
-                'extendedProps': {
-                    'type': 'task',
-                    'project': t.project.title,
-                    'status': t.get_status_display(),
-                    'priority': t.get_priority_display(),
-                    'assignee': t.assigned_to.get_full_name() or t.assigned_to.username if t.assigned_to else 'Unassigned'
-                }
-            })
-            
-    # 3. Meetings
-    for m in meetings:
-        events.append({
-            'id': f'meeting_{m.id}',
-            'title': f'🤝 Meet: {m.title}',
-            'start': m.start_time.isoformat(),
-            'end': m.end_time.isoformat(),
-            'allDay': False,
-            'backgroundColor': '#db2777',
-            'borderColor': '#db2777',
-            'extendedProps': {
-                'type': 'meeting',
-                'project': m.project.title if m.project else 'General Workspace',
-                'organizer': m.organizer.get_full_name() or m.organizer.username,
-                'description': m.description or 'No description provided.'
-            }
-        })
-        
-    return JsonResponse(events, safe=False)
-
-@login_required
-@require_POST
-def update_calendar_event(request, type, pk):
-    from .models import Meeting
-    try:
-        data = json.loads(request.body)
-        new_start_str = data.get('start')
-        new_end_str = data.get('end')
-        
-        # Parse datetime or date
-        if 'T' in new_start_str:
-            new_start = datetime.fromisoformat(new_start_str.replace('Z', ''))
-        else:
-            new_start = datetime.strptime(new_start_str, '%Y-%m-%d').date()
-            
-        if type == 'project':
-            project = get_object_or_404(Project, pk=pk)
-            project.deadline = new_start
-            project.save()
-            
-            Notification.objects.create(
-                user=project.manager or request.user,
-                message=f"Project '{project.title}' deadline rescheduled to {new_start.strftime('%b %d, %Y')}."
-            )
-            return JsonResponse({'status': 'success', 'message': 'Project deadline updated'})
-            
-        elif type == 'task':
-            task = get_object_or_404(Task, pk=pk)
-            task.deadline = new_start
-            task.save()
-            
-            Notification.objects.create(
-                user=task.assigned_to or request.user,
-                message=f"Task '{task.title}' deadline rescheduled to {new_start.strftime('%b %d, %Y')}."
-            )
-            return JsonResponse({'status': 'success', 'message': 'Task deadline updated'})
-            
-        elif type == 'meeting':
-            meeting = get_object_or_404(Meeting, pk=pk)
-            meeting.start_time = datetime.fromisoformat(new_start_str.replace('Z', ''))
-            if new_end_str:
-                meeting.end_time = datetime.fromisoformat(new_end_str.replace('Z', ''))
-            else:
-                from datetime import timedelta
-                meeting.end_time = meeting.start_time + timedelta(hours=1)
-            meeting.save()
-            
-            Notification.objects.create(
-                user=meeting.organizer,
-                message=f"Meeting '{meeting.title}' rescheduled to {meeting.start_time.strftime('%b %d, %Y %I:%M %p')}."
-            )
-            return JsonResponse({'status': 'success', 'message': 'Meeting schedule updated'})
-            
-        return JsonResponse({'status': 'error', 'message': 'Invalid event type'}, status=400)
-    except Exception as e:
-        return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
-
-@login_required
-@require_POST
-def create_meeting_json(request):
-    from .models import Meeting
-    try:
-        data = json.loads(request.body)
-        title = data.get('title')
-        project_id = data.get('project_id')
-        start_str = data.get('start')
-        end_str = data.get('end')
-        description = data.get('description', '')
-        
-        project = None
-        if project_id:
-            project = get_object_or_404(Project, id=project_id)
-            
-        start_time = datetime.fromisoformat(start_str.replace('Z', ''))
-        if end_str:
-            end_time = datetime.fromisoformat(end_str.replace('Z', ''))
-        else:
-            from datetime import timedelta
-            end_time = start_time + timedelta(hours=1)
-            
-        meeting = Meeting.objects.create(
-            title=title,
-            project=project,
-            organizer=request.user,
-            start_time=start_time,
-            end_time=end_time,
-            description=description
-        )
-        
-        return JsonResponse({
-            'status': 'success',
-            'meeting': {
-                'id': meeting.id,
-                'title': meeting.title,
-                'start': meeting.start_time.isoformat(),
-                'end': meeting.end_time.isoformat()
-            }
-        })
-    except Exception as e:
-        return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+    return render(request, 'projects/calendar.html', {'projects': projects, 'tasks': tasks})
 
 @login_required
 def messages_view(request):
@@ -694,6 +511,15 @@ def send_chat_message(request):
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
 
+@login_required
+def teams(request):
+    if request.user.profile.role != 'project_manager':
+        return render(request, 'projects/teams.html', {'error': 'Access denied'})
+
+    teams = Team.objects.filter(project_manager=request.user).prefetch_related('leaders', 'members')
+
+    return render(request, 'projects/teams.html', {'teams': teams})
+
 # Auth Views
 def signup_view(request):
     if request.method == 'POST':
@@ -845,5 +671,175 @@ def add_task_attachment(request, pk):
                 }
             })
         return JsonResponse({'status': 'error', 'message': 'No file provided'}, status=400)
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+
+@login_required
+def calendar_events_json(request):
+    events = []
+    
+    # 1. Projects
+    projects = Project.objects.all()
+    try:
+        user_role = request.user.profile.role
+    except UserProfile.DoesNotExist:
+        user_role = 'team_member'
+        
+    if user_role == 'project_manager':
+        projects = projects.filter(manager=request.user)
+    elif user_role == 'team_leader':
+        projects = projects.filter(Q(manager=request.user) | Q(tasks__assigned_to=request.user)).distinct()
+    elif user_role == 'team_member':
+        projects = projects.filter(tasks__assigned_to=request.user).distinct()
+    elif user_role == 'client':
+        projects = projects.filter(client__email=request.user.email)
+        
+    for project in projects:
+        if project.deadline:
+            events.append({
+                'id': f"project_{project.id}",
+                'title': f"📋 Project: {project.title}",
+                'start': project.deadline.isoformat(),
+                'allDay': True,
+                'backgroundColor': '#4f46e5',
+                'extendedProps': {
+                    'type': 'project',
+                    'client': project.client.name,
+                    'manager': project.manager.get_full_name() or project.manager.username if project.manager else 'Unassigned',
+                    'status': project.get_status_display()
+                }
+            })
+            
+    # 2. Tasks
+    tasks = Task.objects.all()
+    if user_role == 'project_manager':
+        tasks = tasks.filter(project__manager=request.user)
+    elif user_role == 'team_leader':
+        tasks = tasks.filter(project__in=projects)
+    elif user_role == 'team_member':
+        tasks = tasks.filter(assigned_to=request.user)
+    elif user_role == 'client':
+        tasks = tasks.filter(project__client__email=request.user.email)
+        
+    for task in tasks:
+        if task.deadline:
+            color = '#64748b'
+            if task.status == 'in_progress':
+                color = '#2563eb'
+            elif task.status == 'review':
+                color = '#ea580c'
+            elif task.status == 'done':
+                color = '#16a34a'
+                
+            events.append({
+                'id': f"task_{task.id}",
+                'title': f"✓ Task: {task.title}",
+                'start': task.deadline.isoformat(),
+                'allDay': True,
+                'backgroundColor': color,
+                'extendedProps': {
+                    'type': 'task',
+                    'project': task.project.title,
+                    'assignee': task.assigned_to.get_full_name() or task.assigned_to.username if task.assigned_to else 'Unassigned',
+                    'status': task.get_status_display(),
+                    'priority': task.get_priority_display()
+                }
+            })
+            
+    # 3. Meetings
+    meetings = Meeting.objects.all()
+    if user_role == 'project_manager':
+        meetings = meetings.filter(Q(project__manager=request.user) | Q(organizer=request.user))
+    elif user_role == 'team_leader':
+        meetings = meetings.filter(Q(project__in=projects) | Q(organizer=request.user))
+    elif user_role == 'team_member':
+        meetings = meetings.filter(Q(project__in=projects) | Q(organizer=request.user))
+    elif user_role == 'client':
+        meetings = meetings.filter(project__client__email=request.user.email)
+        
+    for meeting in meetings:
+        events.append({
+            'id': f"meeting_{meeting.id}",
+            'title': f"🤝 Meeting: {meeting.title}",
+            'start': meeting.start_time.isoformat(),
+            'end': meeting.end_time.isoformat() if meeting.end_time else None,
+            'allDay': False,
+            'backgroundColor': '#db2777',
+            'extendedProps': {
+                'type': 'meeting',
+                'project': meeting.project.title if meeting.project else 'General',
+                'organizer': meeting.organizer.get_full_name() or meeting.organizer.username,
+                'description': meeting.description or ''
+            }
+        })
+        
+    return JsonResponse(events, safe=False)
+
+@login_required
+@require_POST
+def update_calendar_event(request, type, pk):
+    try:
+        data = json.loads(request.body)
+        start_str = data.get('start')
+        end_str = data.get('end')
+        
+        if type == 'project':
+            project = get_object_or_404(Project, pk=pk)
+            if 'T' in start_str:
+                dt = parse_datetime(start_str)
+                project.deadline = dt.date()
+            else:
+                project.deadline = parse_date(start_str) or project.deadline
+            project.save()
+            return JsonResponse({'status': 'success'})
+        elif type == 'task':
+            task = get_object_or_404(Task, pk=pk)
+            if 'T' in start_str:
+                dt = parse_datetime(start_str)
+                task.deadline = dt.date()
+            else:
+                task.deadline = parse_date(start_str) or task.deadline
+            task.save()
+            return JsonResponse({'status': 'success'})
+        elif type == 'meeting':
+            meeting = get_object_or_404(Meeting, pk=pk)
+            if start_str:
+                meeting.start_time = parse_datetime(start_str) or meeting.start_time
+            if end_str:
+                meeting.end_time = parse_datetime(end_str) or meeting.end_time
+            meeting.save()
+            return JsonResponse({'status': 'success'})
+        else:
+            return JsonResponse({'status': 'error', 'message': 'Invalid event type'}, status=400)
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+
+@login_required
+@require_POST
+def create_meeting_json(request):
+    try:
+        data = json.loads(request.body)
+        title = data.get('title')
+        project_id = data.get('project_id')
+        start_str = data.get('start')
+        end_str = data.get('end')
+        description = data.get('description')
+        
+        if not title or not start_str or not end_str:
+            return JsonResponse({'status': 'error', 'message': 'Missing required fields'}, status=400)
+            
+        project = None
+        if project_id:
+            project = get_object_or_404(Project, id=project_id)
+            
+        meeting = Meeting.objects.create(
+            title=title,
+            project=project,
+            organizer=request.user,
+            start_time=parse_datetime(start_str),
+            end_time=parse_datetime(end_str),
+            description=description
+        )
+        return JsonResponse({'status': 'success', 'id': meeting.id})
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)}, status=400)

@@ -10,6 +10,9 @@ urlpatterns = [
     path('projects/<int:pk>/json/', views.project_detail_json, name='project_detail_json'),
     path('tasks/', views.task_list, name='task_list'),
     path('create-project/', views.create_project, name='create_project'),
+
+    path('teams/', views.teams, name='teams'),
+
     path('client-form/', views.client_form, name='client_form'),
     path('task-board/', views.task_board, name='task_board'),
     path('tasks/<int:pk>/json/', views.task_detail_json, name='task_detail_json'),
