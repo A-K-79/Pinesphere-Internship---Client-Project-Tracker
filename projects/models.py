@@ -18,6 +18,17 @@ class UserProfile(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - {self.get_role_display()}"
+    
+class Team(models.Model):
+    name = models.CharField(max_length=200)
+    project_manager = models.ForeignKey(User, on_delete=models.CASCADE, related_name='teams_managed')
+    leaders = models.ManyToManyField(User, related_name='teams_led', blank=True)
+    members = models.ManyToManyField(User, related_name='teams_joined', blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.name
+
 
 # Signals to automatically create UserProfile
 @receiver(post_save, sender=User)

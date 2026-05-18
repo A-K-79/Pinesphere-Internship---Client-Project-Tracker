@@ -3,7 +3,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth import login, authenticate, logout
 from django.contrib.auth.forms import AuthenticationForm
 from django.db.models import Count, Q
-from .models import Client, Project, Task, Notification, Report, Message, UserProfile, ProjectFile, Feedback
+from .models import Client, Project, Task, Notification, Report, Message, Team, UserProfile, ProjectFile, Feedback
 from .forms import SignUpForm, ProjectForm, TaskForm, ReportForm, FeedbackForm, ClientProjectForm
 from datetime import date
 from django.contrib.auth.models import User
@@ -321,6 +321,15 @@ def messages_view(request):
             return redirect('messages')
     projects = Project.objects.filter(manager=request.user) if user_role == 'project_manager' else Project.objects.all()
     return render(request, 'projects/messages.html', {'messages': messages, 'projects': projects})
+
+@login_required
+def teams(request):
+    if request.user.profile.role != 'project_manager':
+        return render(request, 'projects/teams.html', {'error': 'Access denied'})
+
+    teams = Team.objects.filter(project_manager=request.user).prefetch_related('leaders', 'members')
+
+    return render(request, 'projects/teams.html', {'teams': teams})
 
 # Auth Views
 def signup_view(request):

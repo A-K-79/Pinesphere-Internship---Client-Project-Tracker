@@ -126,7 +126,14 @@
                     </a>
                 </div>
 
-
+                {% if user.profile.role == 'project_manager' %}
+                <div class="nav-item-custom">
+                    <a href="{% url 'teams' %}" class="nav-link-custom {% if request.resolver_match.url_name == 'teams' %}active{% endif %}" title="Teams">
+                        <i class="fas fa-users"></i> <span class="nav-link-text">Teams</span>
+                    </a>
+                </div>
+                {% endif %}
+                
                 <div class="nav-item-custom">
                     <a href="{% url 'calendar' %}" class="nav-link-custom {% if request.resolver_match.url_name == 'calendar' %}active{% endif %}" title="Calendar">
                         <i class="fas fa-calendar-alt"></i> <span class="nav-link-text">Calendar</span>

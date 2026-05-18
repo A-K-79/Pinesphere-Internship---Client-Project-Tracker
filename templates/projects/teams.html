@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+{% block title %}Teams | Project Manager{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <h2 class="fw-bold mb-4">My Teams</h2>
+
+    {% if error %}
+        <div class="alert alert-danger">{{ error }}</div>
+    {% else %}
+        {% for team in teams %}
+            <div class="card border-0 shadow-sm mb-4" style="border-radius: 12px;">
+                <div class="card-header bg-white border-0 pt-4 px-4">
+                    <h5 class="fw-bold mb-0">{{ team.name }}</h5>
+                    <small class="text-muted">Managed by {{ team.project_manager.username }}</small>
+                </div>
+                <div class="card-body px-4">
+                    <h6 class="fw-bold">Leaders</h6>
+                    <ul>
+                        {% for leader in team.leaders.all %}
+                            <li>{{ leader.username }}</li>
+                        {% empty %}
+                            <li class="text-muted">No leaders assigned</li>
+                        {% endfor %}
+                    </ul>
+
+                    <h6 class="fw-bold mt-3">Members</h6>
+                    <ul>
+                        {% for member in team.members.all %}
+                            <li>{{ member.username }}</li>
+                        {% empty %}
+                            <li class="text-muted">No members assigned</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        {% empty %}
+            <p class="text-muted">You don’t have any teams yet.</p>
+        {% endfor %}
+    {% endif %}
+</div>
+{% endblock %}
