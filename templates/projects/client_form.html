@@ -1,0 +1,155 @@
+{% extends 'base.html' %}
+
+{% block title %}Client & Project Form | Tracker{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm" style="border-radius: 16px;">
+                <div class="card-header bg-white border-0 pt-4 px-4">
+                    <h3 class="fw-bold mb-0">New Client & Project</h3>
+                    <p class="text-muted small">Provide client information and project details to get started.</p>
+                </div>
+                <div class="card-body p-4">
+                    <form method="POST" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        
+                        <!-- Client Information Section -->
+                        <div class="mb-4">
+                            <h5 class="fw-bold mb-3 text-primary">
+                                <i class="fas fa-user-tie"></i> Client Information
+                            </h5>
+                            <div class="row g-3">
+                                <div class="col-12">
+                                    <label class="form-label fw-bold small">Client Name</label>
+                                    {{ form.client_name }}
+                                    {% if form.client_name.errors %}
+                                        <div class="text-danger small mt-1">
+                                            {% for error in form.client_name.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold small">Phone Number</label>
+                                    {{ form.phone }}
+                                    {% if form.phone.errors %}
+                                        <div class="text-danger small mt-1">
+                                            {% for error in form.phone.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold small">Email Address</label>
+                                    {{ form.email }}
+                                    {% if form.email.errors %}
+                                        <div class="text-danger small mt-1">
+                                            {% for error in form.email.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <!-- Project Information Section -->
+                        <div class="mb-4">
+                            <h5 class="fw-bold mb-3 text-primary">
+                                <i class="fas fa-briefcase"></i> Project Information
+                            </h5>
+                            <div class="row g-3">
+                                <div class="col-12">
+                                    <label class="form-label fw-bold small">Project Title</label>
+                                    {{ form.project_title }}
+                                    {% if form.project_title.errors %}
+                                        <div class="text-danger small mt-1">
+                                            {% for error in form.project_title.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <!-- File Upload Section -->
+                        <div class="mb-4">
+                            <h5 class="fw-bold mb-3 text-primary">
+                                <i class="fas fa-paperclip"></i> Additional Files
+                            </h5>
+                            <div class="row g-3">
+                                <div class="col-12">
+                                    <label class="form-label fw-bold small">Upload File (Optional - Any Format)</label>
+                                    <div class="input-group">
+                                        {{ form.file_upload }}
+                                        <span class="input-group-text bg-light border-start-0 text-muted" style="border-radius: 0 8px 8px 0;">
+                                            <i class="fas fa-cloud-upload-alt"></i>
+                                        </span>
+                                    </div>
+                                    <small class="text-muted d-block mt-2">
+                                        <i class="fas fa-info-circle"></i> Upload any file format (PDF, DOC, XLS, Images, etc.) - Leave blank to skip
+                                    </small>
+                                    {% if form.file_upload.errors %}
+                                        <div class="text-danger small mt-1">
+                                            {% for error in form.file_upload.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Form Actions -->
+                        <div class="mt-5 d-flex justify-content-end gap-2">
+                            <a href="{% url 'dashboard' %}" class="btn btn-light px-4">
+                                <i class="fas fa-times"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary px-4">
+                                <i class="fas fa-check"></i> Submit
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .form-control, .form-select {
+        border-radius: 8px;
+        border: 1px solid #e0e0e0;
+        padding: 0.625rem 0.75rem;
+        font-size: 0.95rem;
+        transition: all 0.3s ease;
+    }
+
+    .form-control:focus, .form-select:focus {
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.15);
+    }
+
+    .input-group-text {
+        border-radius: 0 8px 8px 0 !important;
+    }
+
+    .form-label {
+        color: #374151;
+        margin-bottom: 0.5rem;
+    }
+
+    hr {
+        border-color: #e5e7eb;
+    }
+</style>
+{% endblock %}

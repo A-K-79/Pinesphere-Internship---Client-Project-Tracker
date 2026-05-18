@@ -19,7 +19,7 @@ class SignUpForm(UserCreationForm):
             profile.save()
         return user
 
-from .models import Project, Task, Report
+from .models import Project, Task, Report, Client, ProjectFile
 
 class ProjectForm(forms.ModelForm):
     class Meta:
@@ -69,3 +69,56 @@ class FeedbackForm(forms.ModelForm):
             'subject': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Subject'}),
             'message': forms.Textarea(attrs={'class': 'form-control', 'rows': 4, 'placeholder': 'Your Feedback'}),
         }
+
+class ClientProjectForm(forms.Form):
+    # Client Information
+    client_name = forms.CharField(
+        label='Client Name',
+        max_length=200,
+        required=True,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Enter client name'
+        })
+    )
+    
+    phone = forms.CharField(
+        label='Phone Number',
+        max_length=20,
+        required=True,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Enter phone number',
+            'type': 'tel'
+        })
+    )
+    
+    email = forms.EmailField(
+        label='Email Address',
+        required=True,
+        widget=forms.EmailInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Enter email address'
+        })
+    )
+    
+    # Project Information
+    project_title = forms.CharField(
+        label='Project Title',
+        max_length=200,
+        required=True,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Enter project title'
+        })
+    )
+    
+    # File Upload (Optional)
+    file_upload = forms.FileField(
+        label='Upload File (Optional)',
+        required=False,
+        widget=forms.FileInput(attrs={
+            'class': 'form-control',
+            'accept': '*/*'
+        })
+    )

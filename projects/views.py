@@ -4,7 +4,7 @@ from django.contrib.auth import login, authenticate, logout
 from django.contrib.auth.forms import AuthenticationForm
 from django.db.models import Count, Q
 from .models import Client, Project, Task, Notification, Report, Message, UserProfile, ProjectFile, Feedback
-from .forms import SignUpForm, ProjectForm, TaskForm, ReportForm, FeedbackForm
+from .forms import SignUpForm, ProjectForm, TaskForm, ReportForm, FeedbackForm, ClientProjectForm
 from datetime import date
 from django.contrib.auth.models import User
 from django.template.loader import get_template, TemplateDoesNotExist
@@ -130,6 +130,44 @@ def create_project(request):
     else:
         form = ProjectForm()
     return render(request, 'projects/create_project.html', {'form': form})
+
+@login_required
+def client_form(request):
+    if request.method == 'POST':
+        form = ClientProjectForm(request.POST, request.FILES)
+        if form.is_valid():
+            # Create or get the client
+            client, created = Client.objects.get_or_create(
+                email=form.cleaned_data['email'],
+                defaults={
+                    'name': form.cleaned_data['client_name'],
+                    'phone': form.cleaned_data['phone'],
+                }
+            )
+            
+            # Create the project
+            project = Project(
+                title=form.cleaned_data['project_title'],
+                description='',
+                client=client,
+                manager=request.user,
+                deadline='2099-12-31'  # Default deadline, can be updated later
+            )
+            project.save()
+            
+            # Handle file upload if provided
+            if form.cleaned_data.get('file_upload'):
+                project_file = ProjectFile(
+                    project=project,
+                    name=form.cleaned_data['file_upload'].name,
+                    file=form.cleaned_data['file_upload']
+                )
+                project_file.save()
+            
+            return redirect('dashboard')
+    else:
+        form = ClientProjectForm()
+    return render(request, 'projects/client_form.html', {'form': form})
 
 # Task Views
 @login_required
