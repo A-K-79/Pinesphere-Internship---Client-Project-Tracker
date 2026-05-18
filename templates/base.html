@@ -125,18 +125,8 @@
                         <i class="fas fa-briefcase"></i> <span class="nav-link-text">Projects</span>
                     </a>
                 </div>
-                <div class="nav-item-custom">
-                    <a href="{% url 'task_board' %}" class="nav-link-custom {% if request.resolver_match.url_name == 'task_board' %}active{% endif %}" title="Task Board">
-                        <i class="fas fa-columns"></i> <span class="nav-link-text">Task Board</span>
-                    </a>
-                </div>
-                {% if user.profile.role == 'project_manager' or user.profile.role == 'admin' %}
-                <div class="nav-item-custom">
-                    <a href="{% url 'team_reports' %}" class="nav-link-custom {% if request.resolver_match.url_name == 'team_reports' %}active{% endif %}" title="Reports">
-                        <i class="fas fa-file-alt"></i> <span class="nav-link-text">Team Reports</span>
-                    </a>
-                </div>
-                {% endif %}
+
+
                 <div class="nav-item-custom">
                     <a href="{% url 'calendar' %}" class="nav-link-custom {% if request.resolver_match.url_name == 'calendar' %}active{% endif %}" title="Calendar">
                         <i class="fas fa-calendar-alt"></i> <span class="nav-link-text">Calendar</span>
@@ -148,12 +138,6 @@
                     </a>
                 </div>
                 {% endif %}
-
-                <div class="nav-item-custom">
-                    <a href="#" class="nav-link-custom" title="Settings">
-                        <i class="fas fa-cog"></i> <span class="nav-link-text">Settings</span>
-                    </a>
-                </div>
             </nav>
         </aside>
 

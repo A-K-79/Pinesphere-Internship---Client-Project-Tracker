@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load custom_filters %}
 
 {% block title %}Calendar | Tracker{% endblock %}
 
@@ -14,10 +15,17 @@
     <div class="col-lg-8">
         <div class="card border-0 shadow-sm mb-4" style="border-radius: 16px;">
             <div class="card-header bg-white border-0 pt-4 px-4 d-flex justify-content-between align-items-center">
-                <h5 class="fw-bold mb-0">May 2026</h5>
+                <h5 class="fw-bold mb-0">{{ month_name }} {{ year }}</h5>
                 <div class="btn-group">
-                    <button class="btn btn-sm btn-outline-secondary"><i class="fas fa-chevron-left"></i></button>
-                    <button class="btn btn-sm btn-outline-secondary"><i class="fas fa-chevron-right"></i></button>
+                    <a href="?month={{ prev_month }}&year={{ prev_year }}" class="btn btn-sm btn-outline-secondary">
+                        <i class="fas fa-chevron-left"></i>
+                    </a>
+                    <a href="?month={% now 'm' %}&year={% now 'Y' %}" class="btn btn-sm btn-outline-secondary">
+                        <i class="fas fa-calendar-day"></i>
+                    </a>
+                    <a href="?month={{ next_month }}&year={{ next_year }}" class="btn btn-sm btn-outline-secondary">
+                        <i class="fas fa-chevron-right"></i>
+                    </a>
                 </div>
             </div>
             <div class="card-body p-4">
@@ -31,25 +39,18 @@
                     <div class="calendar-day-header">Fri</div>
                     <div class="calendar-day-header">Sat</div>
                     
-                    <!-- Empty slots for May 2026 (Starts on Friday) -->
-                    <div class="calendar-day empty"></div>
-                    <div class="calendar-day empty"></div>
-                    <div class="calendar-day empty"></div>
-                    <div class="calendar-day empty"></div>
-                    <div class="calendar-day empty"></div>
-                    
-                    <!-- Days -->
-                    {% for day in "12345678910111213141516171819202122232425262728293031"|make_list %}
-                        <div class="calendar-day">
-                            <span class="day-number">{{ forloop.counter }}</span>
-                            <!-- Show tasks for this day if any (simplified for demo) -->
-                            {% if forloop.counter == 18 %}
-                                <div class="calendar-event bg-primary-subtle text-primary">Task: UI Design</div>
+                    <!-- Calendar Days -->
+                    {% for week in calendar %}
+                        {% for day in week %}
+                            {% if day == 0 %}
+                                <div class="calendar-day empty"></div>
+                            {% else %}
+                                <div class="calendar-day" data-date="{% if month < 10 %}0{% endif %}{{ month }}-{% if day < 10 %}0{% endif %}{{ day }}">
+                                    <span class="day-number">{{ day }}</span>
+                                    <div class="calendar-events-container"></div>
+                                </div>
                             {% endif %}
-                            {% if forloop.counter == 22 %}
-                                <div class="calendar-event bg-warning-subtle text-warning">Project: CRM Update</div>
-                            {% endif %}
-                        </div>
+                        {% endfor %}
                     {% endfor %}
                 </div>
             </div>
@@ -88,6 +89,12 @@
                         </div>
                         {% endif %}
                     {% endfor %}
+                    
+                    {% if not projects and not tasks %}
+                        <div class="text-center py-4 text-muted small">
+                            <i class="fas fa-inbox"></i> No upcoming deadlines
+                        </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -118,6 +125,8 @@
         min-height: 100px;
         padding: 10px;
         position: relative;
+        overflow-y: auto;
+        max-height: 120px;
     }
     .calendar-day.empty {
         background-color: #f8f9fa;
@@ -126,16 +135,54 @@
         font-size: 0.9rem;
         font-weight: 600;
         color: var(--text-main);
+        display: block;
+        margin-bottom: 5px;
     }
     .calendar-event {
-        font-size: 0.7rem;
-        padding: 4px 8px;
+        font-size: 0.65rem;
+        padding: 3px 6px;
         border-radius: 4px;
-        margin-top: 5px;
+        margin-bottom: 3px;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
         font-weight: 500;
     }
+    .calendar-events-container {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
 </style>
+
+<script>
+    // Deadline data from Django context
+    const deadlineData = {{ deadline_dict|safe }};
+    const year = {{ year }};
+    const month = {{ month }};
+    
+    // Populate calendar events
+    document.querySelectorAll('.calendar-day[data-date]').forEach(function(dayElement) {
+        const monthDay = dayElement.getAttribute('data-date');
+        const fullDateStr = year + '-' + monthDay;
+        
+        if (deadlineData[fullDateStr]) {
+            const container = dayElement.querySelector('.calendar-events-container');
+            deadlineData[fullDateStr].forEach(function(item) {
+                const event = document.createElement('div');
+                const titleText = item.title.length > 15 ? item.title.substring(0, 12) + '...' : item.title;
+                
+                if (item.type === 'project') {
+                    event.className = 'calendar-event bg-danger-subtle text-danger';
+                    event.textContent = '📋 ' + titleText;
+                } else {
+                    event.className = 'calendar-event bg-primary-subtle text-primary';
+                    event.textContent = '✓ ' + titleText;
+                }
+                event.title = item.title;
+                container.appendChild(event);
+            });
+        }
+    });
+</script>
 {% endblock %}

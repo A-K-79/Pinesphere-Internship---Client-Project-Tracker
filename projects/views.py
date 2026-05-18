@@ -151,7 +151,7 @@ def client_form(request):
                 description='',
                 client=client,
                 manager=request.user,
-                deadline='2099-12-31'  # Default deadline, can be updated later
+                deadline=form.cleaned_data['deadline']
             )
             project.save()
             
@@ -220,6 +220,10 @@ def approve_report(request, pk):
 # Calendar and Messages
 @login_required
 def calendar_view(request):
+    from datetime import datetime, timedelta
+    import calendar as cal
+    import json
+    
     user_role = request.user.profile.role
     if user_role == 'project_manager':
         projects = Project.objects.filter(manager=request.user)
@@ -227,7 +231,77 @@ def calendar_view(request):
     else:
         projects = Project.objects.all()
         tasks = Task.objects.all()
-    return render(request, 'projects/calendar.html', {'projects': projects, 'tasks': tasks})
+    
+    # Get current month and year from GET parameters or use today
+    current_date = datetime.now()
+    try:
+        month = int(request.GET.get('month', current_date.month))
+        year = int(request.GET.get('year', current_date.year))
+        # Validate month
+        if month < 1:
+            month = 12
+            year -= 1
+        elif month > 12:
+            month = 1
+            year += 1
+    except (ValueError, TypeError):
+        month = current_date.month
+        year = current_date.year
+    
+    # Get calendar data
+    calendar_obj = cal.monthcalendar(year, month)
+    month_name = cal.month_name[month]
+    
+    # Get all deadlines for this month
+    start_date = datetime(year, month, 1).date()
+    if month == 12:
+        end_date = datetime(year + 1, 1, 1).date() - timedelta(days=1)
+    else:
+        end_date = datetime(year, month + 1, 1).date() - timedelta(days=1)
+    
+    # Create a dictionary of deadlines by date (formatted as YYYY-MM-DD)
+    deadline_dict = {}
+    for project in projects:
+        deadline_key = project.deadline.strftime('%Y-%m-%d')
+        if deadline_key not in deadline_dict:
+            deadline_dict[deadline_key] = []
+        deadline_dict[deadline_key].append({
+            'type': 'project',
+            'title': project.title,
+            'deadline': project.deadline.isoformat()
+        })
+    
+    for task in tasks:
+        deadline_key = task.deadline.strftime('%Y-%m-%d')
+        if deadline_key not in deadline_dict:
+            deadline_dict[deadline_key] = []
+        deadline_dict[deadline_key].append({
+            'type': 'task',
+            'title': task.title,
+            'project': task.project.title,
+            'deadline': task.deadline.isoformat()
+        })
+    
+    # Previous and next month links
+    prev_month = month - 1 if month > 1 else 12
+    prev_year = year if month > 1 else year - 1
+    next_month = month + 1 if month < 12 else 1
+    next_year = year if month < 12 else year + 1
+    
+    context = {
+        'projects': projects,
+        'tasks': tasks,
+        'calendar': calendar_obj,
+        'month': month,
+        'year': year,
+        'month_name': month_name,
+        'deadline_dict': json.dumps(deadline_dict),
+        'prev_month': prev_month,
+        'prev_year': prev_year,
+        'next_month': next_month,
+        'next_year': next_year,
+    }
+    return render(request, 'projects/calendar.html', context)
 
 @login_required
 def messages_view(request):
