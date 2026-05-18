@@ -399,10 +399,11 @@ def messages_view(request):
         elif role == 'client':
             clients.append(user_info)
             
-    # Sort
-    managers.sort(key=lambda x: x['latest_time'] or datetime.min, reverse=True)
-    team_members.sort(key=lambda x: x['latest_time'] or datetime.min, reverse=True)
-    clients.sort(key=lambda x: x['latest_time'] or datetime.min, reverse=True)
+    # Sort timezone safely to avoid TypeError when comparing offset-naive and offset-aware datetimes
+    sort_key = lambda x: (1, x['latest_time']) if x['latest_time'] is not None else (0, datetime.min)
+    managers.sort(key=sort_key, reverse=True)
+    team_members.sort(key=sort_key, reverse=True)
+    clients.sort(key=sort_key, reverse=True)
 
     return render(request, 'projects/messages.html', {
         'projects': projects,
