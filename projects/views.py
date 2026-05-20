@@ -127,30 +127,29 @@ def dashboard(request):
     
     # Get team data for team leader
     if user_role == 'team_leader':
-        # First try to get team members from Team model
-        teams_led = Team.objects.filter(leaders=request.user)
-        team_members_from_teams = User.objects.none()
+        # Get all team members from the system (users with team_member role)
+        from projects.models import UserProfile
+        all_team_members = User.objects.filter(profile__role='team_member').distinct()
         
+        # Also get members from tasks if Team objects exist
+        teams_led = Team.objects.filter(leaders=request.user)
         if teams_led.exists():
             team_members_from_teams = User.objects.filter(teams_joined__in=teams_led).distinct()
-        
-        # Also get team members from assigned tasks in the team leader's projects
-        team_leader_project_tasks = Task.objects.filter(project__in=projects)
-        team_members_from_tasks = User.objects.filter(assigned_tasks__in=team_leader_project_tasks).distinct()
-        
-        # Combine both sources
-        all_team_members = team_members_from_teams.union(team_members_from_tasks).distinct()
+            all_team_members = all_team_members.union(team_members_from_teams).distinct()
         
         tl_team_count = all_team_members.count()
         
-        # Get tasks assigned to all team members
-        tl_tasks_in_progress = team_leader_project_tasks.filter(assigned_to__in=all_team_members, status='in_progress').count()
-        tl_tasks_completed = team_leader_project_tasks.filter(assigned_to__in=all_team_members, status='done').count()
-        tl_tasks_delayed = team_leader_project_tasks.filter(assigned_to__in=all_team_members).exclude(status='done').filter(deadline__lt=today).count()
+        # Get all tasks (not just from specific projects)
+        all_tasks = Task.objects.all()
+        
+        # Count tasks assigned to team members
+        tl_tasks_in_progress = all_tasks.filter(assigned_to__in=all_team_members, status='in_progress').count()
+        tl_tasks_completed = all_tasks.filter(assigned_to__in=all_team_members, status='done').count()
+        tl_tasks_delayed = all_tasks.filter(assigned_to__in=all_team_members).exclude(status='done').filter(deadline__lt=today).count()
         
         # Build team members list from actual data
         for member in all_team_members[:4]:
-            member_tasks = team_leader_project_tasks.filter(assigned_to=member)
+            member_tasks = all_tasks.filter(assigned_to=member)
             tl_team_members_list.append({
                 'name': member.get_full_name() or member.username,
                 'role': member.profile.get_role_display() if hasattr(member, 'profile') else 'Team Member',
@@ -1098,6 +1097,8 @@ def task_detail_json(request, pk):
 
 @login_required
 @require_POST
+@login_required
+@require_POST
 def update_task_status(request, pk):
     task = get_object_or_404(Task, pk=pk)
     try:
@@ -1167,7 +1168,7 @@ def add_task_attachment(request, pk):
 def calendar_events_json(request):
     events = []
     
-    # 1. Projects
+    # 1. Projects - PRIORITY DISPLAY
     projects = Project.objects.all()
     try:
         user_role = request.user.profile.role
@@ -1185,17 +1186,30 @@ def calendar_events_json(request):
         
     for project in projects:
         if project.deadline:
+            # Color based on project status
+            status_color = '#4f46e5'  # Default indigo
+            if project.status == 'completed':
+                status_color = '#10b981'  # Green
+            elif project.status == 'on_hold':
+                status_color = '#f59e0b'  # Amber
+            elif project.deadline < date.today():
+                status_color = '#ef4444'  # Red for overdue
+                
             events.append({
                 'id': f"project_{project.id}",
-                'title': f"📋 Project: {project.title}",
+                'title': f"📋 PROJECT: {project.title}",
                 'start': project.deadline.isoformat(),
                 'allDay': True,
-                'backgroundColor': '#4f46e5',
+                'backgroundColor': status_color,
+                'borderColor': status_color,
+                'textColor': 'white',
                 'extendedProps': {
                     'type': 'project',
                     'client': project.client.name,
                     'manager': project.manager.get_full_name() or project.manager.username if project.manager else 'Unassigned',
-                    'status': project.get_status_display()
+                    'status': project.get_status_display(),
+                    'description': project.title,
+                    'priority': project.get_priority_display()
                 }
             })
             
@@ -1219,6 +1233,8 @@ def calendar_events_json(request):
                 color = '#ea580c'
             elif task.status == 'done':
                 color = '#16a34a'
+            elif task.deadline < date.today() and task.status != 'done':
+                color = '#dc2626'  # Red for overdue
                 
             events.append({
                 'id': f"task_{task.id}",
@@ -1226,6 +1242,7 @@ def calendar_events_json(request):
                 'start': task.deadline.isoformat(),
                 'allDay': True,
                 'backgroundColor': color,
+                'textColor': 'white',
                 'extendedProps': {
                     'type': 'task',
                     'project': task.project.title,
@@ -1254,6 +1271,7 @@ def calendar_events_json(request):
             'end': meeting.end_time.isoformat() if meeting.end_time else None,
             'allDay': False,
             'backgroundColor': '#db2777',
+            'textColor': 'white',
             'extendedProps': {
                 'type': 'meeting',
                 'project': meeting.project.title if meeting.project else 'General',

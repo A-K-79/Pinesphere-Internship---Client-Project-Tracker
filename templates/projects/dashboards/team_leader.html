@@ -591,10 +591,15 @@
         event.target.reset();
     }
 
-    // Auto-refresh dashboard data every 30 seconds to show live updates
+    // Function to refresh dashboard immediately
+    window.refreshDashboard = function() {
+        location.reload();
+    }
+
+    // Auto-refresh dashboard data every 5 seconds to show live updates
     setInterval(function() {
         location.reload();
-    }, 30000);
+    }, 5000);
 </script>
 <style>
     .timeline-container::-webkit-scrollbar {
