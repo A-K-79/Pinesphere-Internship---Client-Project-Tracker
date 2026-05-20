@@ -118,18 +118,63 @@ def dashboard(request):
     delayed_projects = projects.filter(deadline__lt=today).exclude(status='completed')
     upcoming_meetings = Meeting.objects.filter(start_time__gte=datetime.now()).order_by('start_time')[:3]
     
-    # Team Leader premium execution metrics
-    tl_tasks_in_progress = tasks.filter(status='in_progress').count()
-    tl_tasks_completed = tasks.filter(status='done').count()
-    tl_tasks_delayed = tasks.exclude(status='done').filter(deadline__lt=today).count()
-    tl_bugs_reported = tasks.filter(Q(title__icontains='bug') | Q(priority='urgent')).count()
+    # Team Leader premium execution metrics - Get actual live data
+    tl_team_count = 0
+    tl_tasks_in_progress = 0
+    tl_tasks_completed = 0
+    tl_tasks_delayed = 0
+    tl_team_members_list = []
     
-    tl_team_members = [
-        {'name': 'Ravi Patel', 'role': 'Senior Backend Dev', 'status': 'Online', 'mood': '😊 Happy', 'workload': 'Balanced', 'tasks': 3, 'avatar': 'https://api.dicebear.com/7.x/avataaars/svg?seed=Ravi'},
-        {'name': 'John Doe', 'role': 'Frontend Engineer', 'status': 'Busy', 'mood': '😐 Neutral', 'workload': 'Overloaded', 'tasks': 5, 'avatar': 'https://api.dicebear.com/7.x/avataaars/svg?seed=John'},
-        {'name': 'Sarah Connor', 'role': 'QA Tester', 'status': 'In Meeting', 'mood': '😊 Happy', 'workload': 'Free', 'tasks': 1, 'avatar': 'https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah'},
-        {'name': 'David Okafor', 'role': 'UI Designer', 'status': 'On Leave', 'mood': '😓 Stressed', 'workload': 'Balanced', 'tasks': 2, 'avatar': 'https://api.dicebear.com/7.x/avataaars/svg?seed=David'},
-    ]
+    # Get team data for team leader
+    if user_role == 'team_leader':
+        # First try to get team members from Team model
+        teams_led = Team.objects.filter(leaders=request.user)
+        team_members_from_teams = User.objects.none()
+        
+        if teams_led.exists():
+            team_members_from_teams = User.objects.filter(teams_joined__in=teams_led).distinct()
+        
+        # Also get team members from assigned tasks in the team leader's projects
+        team_leader_project_tasks = Task.objects.filter(project__in=projects)
+        team_members_from_tasks = User.objects.filter(assigned_tasks__in=team_leader_project_tasks).distinct()
+        
+        # Combine both sources
+        all_team_members = team_members_from_teams.union(team_members_from_tasks).distinct()
+        
+        tl_team_count = all_team_members.count()
+        
+        # Get tasks assigned to all team members
+        tl_tasks_in_progress = team_leader_project_tasks.filter(assigned_to__in=all_team_members, status='in_progress').count()
+        tl_tasks_completed = team_leader_project_tasks.filter(assigned_to__in=all_team_members, status='done').count()
+        tl_tasks_delayed = team_leader_project_tasks.filter(assigned_to__in=all_team_members).exclude(status='done').filter(deadline__lt=today).count()
+        
+        # Build team members list from actual data
+        for member in all_team_members[:4]:
+            member_tasks = team_leader_project_tasks.filter(assigned_to=member)
+            tl_team_members_list.append({
+                'name': member.get_full_name() or member.username,
+                'role': member.profile.get_role_display() if hasattr(member, 'profile') else 'Team Member',
+                'status': 'Online',
+                'mood': '😊 Happy',
+                'workload': 'Balanced',
+                'tasks': member_tasks.count(),
+                'avatar': f'https://api.dicebear.com/7.x/avataaars/svg?seed={member.username}'
+            })
+    else:
+        tl_tasks_in_progress = tasks.filter(status='in_progress').count()
+        tl_tasks_completed = tasks.filter(status='done').count()
+        tl_tasks_delayed = tasks.exclude(status='done').filter(deadline__lt=today).count()
+    
+    # Use real team members list if available, otherwise use defaults
+    if tl_team_members_list:
+        tl_team_members = tl_team_members_list
+    else:
+        tl_team_members = [
+            {'name': 'Ravi Patel', 'role': 'Senior Backend Dev', 'status': 'Online', 'mood': '😊 Happy', 'workload': 'Balanced', 'tasks': 3, 'avatar': 'https://api.dicebear.com/7.x/avataaars/svg?seed=Ravi'},
+            {'name': 'John Doe', 'role': 'Frontend Engineer', 'status': 'Busy', 'mood': '😐 Neutral', 'workload': 'Overloaded', 'tasks': 5, 'avatar': 'https://api.dicebear.com/7.x/avataaars/svg?seed=John'},
+            {'name': 'Sarah Connor', 'role': 'QA Tester', 'status': 'In Meeting', 'mood': '😊 Happy', 'workload': 'Free', 'tasks': 1, 'avatar': 'https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah'},
+            {'name': 'David Okafor', 'role': 'UI Designer', 'status': 'On Leave', 'mood': '😓 Stressed', 'workload': 'Balanced', 'tasks': 2, 'avatar': 'https://api.dicebear.com/7.x/avataaars/svg?seed=David'},
+        ]
     
     tl_activities = [
         {'activity_type': 'Task Completed', 'description': 'Ravi Patel completed API integration for payment gateway', 'time': '10 mins ago'},
@@ -252,10 +297,10 @@ def dashboard(request):
         'pm_chart_completion': pm_chart_completion,
         
         # Team Leader Premium KPIs
+        'tl_team_count': tl_team_count,
         'tl_tasks_in_progress': tl_tasks_in_progress,
         'tl_tasks_completed': tl_tasks_completed,
         'tl_tasks_delayed': tl_tasks_delayed,
-        'tl_bugs_reported': tl_bugs_reported,
         'tl_team_members': tl_team_members,
         'tl_activities': tl_activities,
         'tl_urgent_issues': tl_urgent_issues,
