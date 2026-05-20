@@ -16,7 +16,21 @@
             <div class="mb-3">
                 <label class="form-label">{{ field.label }}</label>
                 {{ field.errors }}
+                {% if field.field.widget.input_type == "password" %}
+                <input 
+                    type="password" 
+                    name="{{ field.name }}" 
+                    class="form-control" 
+                    placeholder="{{ field.label }}" 
+                    id="id_{{ field.name }}" 
+                >
+                <span class="position-absolute top-50 end-0 translate-middle-y px-3" style="cursor:pointer;"
+                      onclick="togglePassword('{{ field.name }}')">
+                    <i id="icon_{{ field.name }}" class="bi bi-eye"></i>
+                </span>
+                {% else %}
                 <input type="{{ field.field.widget.input_type }}" name="{{ field.name }}" class="form-control" placeholder="{{ field.label }}">
+                {% endif %}
             </div>
             {% endfor %}
             
@@ -34,4 +48,19 @@
         background-color: rgb(32, 32, 154);
     }
 </style>
+<script>
+    function togglePassword(fieldName) {
+        const input = document.getElementById('id_' + fieldName);
+        const icon = document.getElementById('icon_' + fieldName);
+        if (input.type === "password") {
+            input.type = "text";
+            icon.classList.remove('bi-eye');
+            icon.classList.add('bi-eye-slash');
+        } else {
+            input.type = "password";
+            icon.classList.remove('bi-eye-slash');
+            icon.classList.add('bi-eye');
+        }
+    }
+</script>
 {% endblock %}

@@ -161,9 +161,11 @@
         <h2 class="fw-bold mb-1 text-main">Projects Hub</h2>
         <p class="text-muted small mb-0">Track workspace progress, priority states, team members, and deliverables.</p>
     </div>
+    {% if user.profile.role == 'project_manager' %}
     <button class="btn btn-primary d-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#newProjectModal">
         <i class="fas fa-plus"></i> New Project
     </button>
+    {% endif %}
 </div>
 
 <!-- Project Status Overview KPI Row -->
@@ -557,6 +559,20 @@
         </div>
     </div>
 </div>
+<style>
+    .btn-primary {
+    background-color: #3b82f6; /* base blue */
+    border-color: #3b82f6;
+    color: #ffffff;
+    transition: background-color 0.2s ease-in-out;
+    }
+
+    .btn-primary:hover {
+    background-color: #2563eb; /* deeper blue on hover */
+    border-color: #2563eb;
+    }
+
+</style>
 
 {% endblock %}
 

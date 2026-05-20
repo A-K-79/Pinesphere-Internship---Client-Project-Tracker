@@ -17,11 +17,6 @@
                         <h2 class="fw-bold mb-2">Project Management Suite</h2>
                         <p class="mb-0 opacity-75">Welcome back, {{ user.get_full_name|default:user.username }}. You are coordinating {{ total_projects }} projects across technical pipelines.</p>
                     </div>
-                    <div class="col-lg-4 text-end mt-3 mt-lg-0">
-                        <a href="{% url 'create_project' %}" class="btn btn-light text-slate fw-bold px-4 py-2.5 transition-all hover-scale" style="border-radius: 10px; box-shadow: 0 4px 12px rgba(255,255,255,0.15);">
-                            <i class="fas fa-plus-circle me-2 text-primary"></i> Create Project
-                        </a>
-                    </div>
                 </div>
             </div>
         </div>
