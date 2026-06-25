@@ -57,15 +57,24 @@
         color: var(--text-main);
     }
 
-    .fc-button {
-        font-weight: 600 !important;
-        font-size: 0.85rem !important;
-        padding: 0.45rem 0.9rem !important;
-        border-radius: 8px !important;
-        text-transform: capitalize !important;
-        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1) !important;
-        transition: all 0.3s ease !important;
-    }
+ .fc-button {
+    font-weight: 600 !important;
+    font-size: 0.85rem !important;
+    padding: 0.45rem 0.9rem !important;
+    border-radius: 8px !important;
+    text-transform: capitalize !important;
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1) !important;
+    transition: all 0.3s ease !important;
+    background-color: #2563eb !important;
+    border-color: #2563eb !important;
+    color: #ffffff !important;
+    opacity: 1 !important;
+}
+.fc-button-active, .fc-button:not(.fc-button-active):active {
+    background-color: #1e3a8a !important;
+    border-color: #1e3a8a !important;
+    color: #ffffff !important;
+}
     
     .fc-button:hover {
         transform: translateY(-1px);
@@ -355,10 +364,12 @@
     document.addEventListener('DOMContentLoaded', function() {
         const calendarEl = document.getElementById('calendar');
 
-        calendar = new FullCalendar.Calendar(calendarEl, {
-            initialView: 'dayGridMonth',
-            editable: true, // ENABLES DRAG & DROP deadlines rescheduling!
-            headerToolbar: {
+calendar = new FullCalendar.Calendar(calendarEl, {
+    initialView: 'dayGridMonth',
+    editable: true, // ENABLES DRAG & DROP deadlines rescheduling!
+    dayMaxEvents: 3,
+    eventDisplay: 'block',
+    headerToolbar: {
                 left: 'title',
                 center: 'dayGridMonth,timeGridWeek,listMonth',
                 right: 'prev,next today'
@@ -382,35 +393,7 @@
         });
 
         calendar.render();
-    // Deadline data from Django context
-    const deadlineData = {{ deadline_dict|safe }};
-    const year = {{ year }};
-    const month = {{ month }};
-    
-    // Populate calendar events
-    document.querySelectorAll('.calendar-day[data-date]').forEach(function(dayElement) {
-        const monthDay = dayElement.getAttribute('data-date');
-        // Format: YYYY-MM-DD
-        const fullDateStr = year + '-' + monthDay;
-        
-        if (deadlineData[fullDateStr]) {
-            const container = dayElement.querySelector('.calendar-events-container');
-            deadlineData[fullDateStr].forEach(function(item) {
-                const event = document.createElement('div');
-                const titleText = item.title.length > 15 ? item.title.substring(0, 12) + '...' : item.title;
-                
-                if (item.type === 'project') {
-                    event.className = 'calendar-event bg-danger-subtle text-danger';
-                    event.textContent = '📋 ' + titleText;
-                } else {
-                    event.className = 'calendar-event bg-primary-subtle text-primary';
-                    event.textContent = '✓ ' + titleText;
-                }
-                event.title = item.title;
-                container.appendChild(event);
-            });
-        }
-    });
+ 
 
     // Toast alert triggers
     function showToast(message) {
@@ -568,5 +551,6 @@
             alert("Could not schedule meeting on server.");
         });
     }
+});
 </script>
 {% endblock %}
