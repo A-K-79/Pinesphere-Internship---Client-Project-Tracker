@@ -1527,7 +1527,9 @@ def calendar_events_json(request):
         user_role = 'team_member'
         
     if user_role == 'project_manager':
-        projects = projects.filter(manager=request.user)
+        pm_projects = projects.filter(manager=request.user)
+        client_projects = projects.filter(client__isnull=False)
+        projects = (pm_projects | client_projects).distinct()
     elif user_role == 'team_leader':
         projects = projects.filter(Q(manager=request.user) | Q(tasks__assigned_to=request.user)).distinct()
     elif user_role == 'team_member':
