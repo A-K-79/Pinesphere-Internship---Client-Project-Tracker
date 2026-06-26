@@ -326,80 +326,80 @@
     });
 
     // Chart 2: Weekly Progress (Line)
-    // const ctx2 = document.getElementById('weeklyProgressChart').getContext('2d');
-    // const data2 = {{ chart_progress| safe }};
-    // new Chart(ctx2, {
-    //     type: 'line',
-    //     data: {
-    //         labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4', 'Week 5'],
-    //         datasets: [{
-    //             label: 'Completion Progress %',
-    //             data: data2.length ? data2 : [10, 30, 50, 75, 100],
-    //             borderColor: '#6366f1',
-    //             backgroundColor: 'rgba(99, 102, 241, 0.1)',
-    //             tension: 0.4,
-    //             fill: true,
-    //             borderWidth: 3,
-    //             pointRadius: 4,
-    //             pointBackgroundColor: '#6366f1'
-    //         }]
-    //     },
-    //     options: {
-    //         responsive: true,
-    //         maintainAspectRatio: false,
-    //         plugins: {
-    //             legend: { display: false }
-    //         },
-    //         scales: {
-    //             y: {
-    //                 beginAtZero: true,
-    //                 max: 100,
-    //                 ticks: { color: 'var(--text-muted)' },
-    //                 grid: { color: 'rgba(0,0,0,0.03)' }
-    //             },
-    //             x: {
-    //                 ticks: { color: 'var(--text-muted)' },
-    //                 grid: { display: false }
-    //             }
-    //         }
-    //     }
-    // });
+    const ctx2 = document.getElementById('weeklyProgressChart').getContext('2d');
+    const data2 = {{ chart_progress| safe }};
+    new Chart(ctx2, {
+        type: 'line',
+        data: {
+            labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4', 'Week 5'],
+            datasets: [{
+                label: 'Completion Progress %',
+                data: data2.length ? data2 : [10, 30, 50, 75, 100],
+                borderColor: '#6366f1',
+                backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                tension: 0.4,
+                fill: true,
+                borderWidth: 3,
+                pointRadius: 4,
+                pointBackgroundColor: '#6366f1'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100,
+                    ticks: { color: 'var(--text-muted)' },
+                    grid: { color: 'rgba(0,0,0,0.03)' }
+                },
+                x: {
+                    ticks: { color: 'var(--text-muted)' },
+                    grid: { display: false }
+                }
+            }
+        }
+    });
 
     // Chart 3: Team Workload (Bar)
-    // const ctx3 = document.getElementById('teamProductivityChart').getContext('2d');
-    // const data3 = {{ chart_team_productivity| safe }};
-    // new Chart(ctx3, {
-    //     type: 'bar',
-    //     data: {
-    //         labels: ['Sarah Connor (PM)', 'John Doe (Backend)', 'Alex Mercer (Design)', 'David Okafor (Tester)', 'Sophie (Admin)'],
-    //         datasets: [{
-    //             label: 'Allocated Hours',
-    //             data: data3.length ? data3 : [10, 25, 18, 12, 5],
-    //             backgroundColor: ['rgba(59, 130, 246, 0.7)', 'rgba(99, 102, 241, 0.7)', 'rgba(16, 185, 129, 0.7)', 'rgba(245, 158, 11, 0.7)', 'rgba(239, 68, 68, 0.7)'],
-    //             borderRadius: 8,
-    //             borderWidth: 0,
-    //             barThickness: 24
-    //         }]
-    //     },
-    //     options: {
-    //         responsive: true,
-    //         maintainAspectRatio: false,
-    //         plugins: {
-    //             legend: { display: false }
-    //         },
-    //         scales: {
-    //             y: {
-    //                 beginAtZero: true,
-    //                 ticks: { color: 'var(--text-muted)' },
-    //                 grid: { color: 'rgba(0,0,0,0.03)' }
-    //             },
-    //             x: {
-    //                 ticks: { color: 'var(--text-muted)' },
-    //                 grid: { display: false }
-    //             }
-    //         }
-    //     }
-    // });
+    const ctx3 = document.getElementById('teamProductivityChart').getContext('2d');
+    const data3 = {{ chart_team_productivity| safe }};
+    new Chart(ctx3, {
+        type: 'bar',
+        data: {
+            labels: ['Sarah Connor (PM)', 'John Doe (Backend)', 'Alex Mercer (Design)', 'David Okafor (Tester)', 'Sophie (Admin)'],
+            datasets: [{
+                label: 'Allocated Hours',
+                data: data3.length ? data3 : [10, 25, 18, 12, 5],
+                backgroundColor: ['rgba(59, 130, 246, 0.7)', 'rgba(99, 102, 241, 0.7)', 'rgba(16, 185, 129, 0.7)', 'rgba(245, 158, 11, 0.7)', 'rgba(239, 68, 68, 0.7)'],
+                borderRadius: 8,
+                borderWidth: 0,
+                barThickness: 24
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: { color: 'var(--text-muted)' },
+                    grid: { color: 'rgba(0,0,0,0.03)' }
+                },
+                x: {
+                    ticks: { color: 'var(--text-muted)' },
+                    grid: { display: false }
+                }
+            }
+        }
+    });
     });
 </script>
 {% endblock %}
