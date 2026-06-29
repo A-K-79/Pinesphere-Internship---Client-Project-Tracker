@@ -30,10 +30,11 @@
                                     <div class="x-small text-muted">Demo v{{ demo.version }}</div>
                                 </td>
                                 <td>
-                                    <div class="fw-bold text-main text-uppercase">{{ demo.get_payment_type_display }}</div>
+                                    <div class="fw-bold text-main text-uppercase">Payment Info</div>
                                 </td>
                                 <td>
-                                    <div class="fw-bold text-success">₹{{ demo.payment_amount }}</div>
+                                    <div class="fw-bold text-success">₹{{ demo.full_payment }} (Full)</div>
+                                    <div class="x-small text-muted">₹{{ demo.advance_payment }} (Advance)</div>
                                 </td>
                                 <td>
                                     {% if demo.demo_url %}

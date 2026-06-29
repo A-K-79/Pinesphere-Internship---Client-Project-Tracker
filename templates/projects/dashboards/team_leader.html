@@ -15,7 +15,7 @@
                 <div class="row align-items-center">
                     <div class="col-lg-8">
                         <span class="badge bg-white bg-opacity-20 px-3 py-2 mb-3 text-uppercase fw-bold"
-                            style="letter-spacing: 1px; font-size: 0.75rem;">Sprint Operations</span>
+                            style="letter-spacing: 1px; font-size: 0.75rem;color: #000;">Sprint Operations</span>
                         <h2 class="fw-bold mb-2">Team Execution Console</h2>
                         <p class="mb-0 opacity-75">Welcome back, Lead {{ user.username }}. You have {{ total_tasks }}
                             team deliverables active in Sprint 4.</p>
@@ -295,6 +295,14 @@
                         <i class="fas fa-circle-nodes fa-lg mb-2 text-info"></i>
                         <div class="fw-bold small">Review Deliverables</div>
                         <span class="x-small text-muted d-block">Audit code integrations</span>
+                    </a>
+                </div>
+                <div class="col-12">
+                    <a href="{% url 'team_lead_demo_approvals' %}"
+                        class="btn btn-outline-primary w-100 p-3 rounded-3 text-start transition-all hover-translate hover-scale">
+                        <i class="fas fa-video fa-lg mb-2 text-primary"></i>
+                        <div class="fw-bold small">Demo Approvals</div>
+                        <span class="x-small text-muted d-block">Review, Accept, or Reject Demo Submissions</span>
                     </a>
                 </div>
             </div>
@@ -586,11 +594,6 @@
     window.refreshDashboard = function() {
         location.reload();
     }
-
-    // Auto-refresh dashboard data every 5 seconds to show live updates
-    setInterval(function() {
-        location.reload();
-    }, 5000);
 </script>
 <style>
     .timeline-container::-webkit-scrollbar {

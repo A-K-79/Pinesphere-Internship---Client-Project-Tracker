@@ -304,16 +304,16 @@
                     </a>
                 </div>
                 <div class="col-6">
-                    <a href="{% url 'messages' %}" class="btn btn-outline-info w-100 p-3 rounded-3 text-start transition-all hover-translate hover-scale">
-                        <i class="fas fa-comments fa-lg mb-2 text-info"></i>
-                        <div class="fw-bold small">Send Message</div>
-                        <span class="x-small text-muted d-block">Open communication tunnels</span>
+                    <a href="{% url 'demo_approval_table' %}" class="btn btn-outline-info w-100 p-3 rounded-3 text-start transition-all hover-translate hover-scale">
+                        <i class="fas fa-video fa-lg mb-2 text-info"></i>
+                        <div class="fw-bold small">Demo Approvals</div>
+                        <span class="x-small text-muted d-block">Review and forward demos</span>
                     </a>
                 </div>
             </div>
         </div>
     </div>
-</div>
+
 <!-- Clients Overview Section -->
 <div class="row g-4 mt-4">
     <div class="col-12">
@@ -388,6 +388,68 @@
                     </div>
                 </div>
                 {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Row 3: Recent Team Reports -->
+<div class="row g-4 mb-4">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm h-100 p-4" style="border-radius: 16px;">
+            <div class="d-flex align-items-center justify-content-between mb-4">
+                <div>
+                    <h5 class="fw-bold mb-1 text-main"><i class="fas fa-file-alt text-primary me-2"></i>Recent Team Reports</h5>
+                    <p class="text-muted x-small mb-0">Latest status reports submitted by Team Leaders and Members</p>
+                </div>
+                <a href="{% url 'team_reports' %}" class="btn btn-sm btn-outline-primary rounded-pill px-3">View All</a>
+            </div>
+            
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-4">Report Title</th>
+                            <th>Project</th>
+                            <th>Submitted By</th>
+                            <th>Status</th>
+                            <th class="text-end pe-4">Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for report in pm_reports %}
+                        <tr>
+                            <td class="ps-4 fw-medium text-main">{{ report.title }}</td>
+                            <td><span class="badge bg-light text-dark border">{{ report.project.title }}</span></td>
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="avatar bg-primary-subtle text-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 28px; height: 28px; font-size: 0.75rem;">
+                                        {{ report.submitted_by.username|make_list|first|upper }}
+                                    </div>
+                                    <span class="small">{{ report.submitted_by.get_full_name|default:report.submitted_by.username }}</span>
+                                </div>
+                            </td>
+                            <td>
+                                {% if report.status == 'approved' %}
+                                    <span class="badge bg-success-subtle text-success"><i class="fas fa-check-circle me-1"></i>Approved</span>
+                                {% elif report.status == 'rejected' %}
+                                    <span class="badge bg-danger-subtle text-danger"><i class="fas fa-times-circle me-1"></i>Rejected</span>
+                                {% else %}
+                                    <span class="badge bg-warning-subtle text-warning"><i class="fas fa-clock me-1"></i>Pending</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end pe-4 text-muted small">{{ report.created_at|date:"M d, Y" }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center py-4 text-muted">
+                                <i class="fas fa-inbox mb-2" style="font-size: 1.5rem; opacity: 0.5;"></i>
+                                <p class="mb-0 small">No recent reports available.</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>

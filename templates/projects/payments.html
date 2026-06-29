@@ -6,99 +6,105 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
-        <h3 class="fw-bold mb-0 text-main"><i class="fas fa-credit-card text-primary me-2"></i>Invoices & Billing Statement</h3>
-        <p class="text-muted small mb-0">Track payment status, outstanding balances, and retrieve past invoice files</p>
+        <h3 class="fw-bolder mb-1" style="background: linear-gradient(135deg, #1e293b, #3b82f6); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+            <i class="fas fa-credit-card me-2" style="color: #3b82f6; -webkit-text-fill-color: initial;"></i>Invoices & Billing Statement
+        </h3>
+        <p class="text-muted small mb-0" style="font-size: 0.9rem;">Track payment status, outstanding balances, and retrieve past invoice files</p>
     </div>
 </div>
 
 <!-- Financial Summary Widgets -->
-<div class="row g-4 mb-4">
+<div class="row g-4 mb-5">
     <div class="col-md-4">
-        <div class="card border-0 glass-card p-4 h-100">
-            <div class="d-flex align-items-center justify-content-between mb-2">
-                <div class="small fw-bold text-muted text-uppercase" style="letter-spacing: 0.5px;">Paid Amount</div>
-                <div class="text-success bg-success bg-opacity-10 p-2 rounded-3"><i class="fas fa-check-circle"></i></div>
+        <div class="card border-0 shadow-sm p-4 h-100 hover-scale" style="border-radius: 24px; background: linear-gradient(145deg, #ffffff, #f0fdf4);">
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <div class="fw-bold text-muted text-uppercase" style="letter-spacing: 0.5px; font-size: 0.75rem;">Paid Amount</div>
+                <div class="text-success bg-white shadow-sm p-2 rounded-circle d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;"><i class="fas fa-check-circle"></i></div>
             </div>
-            <h3 class="fw-bold mb-0 text-main">$15,000.00</h3>
-            <div class="text-muted x-small mt-2"><i class="fas fa-shield-alt text-success me-1"></i>Securely processed</div>
+            <h2 class="fw-bolder mb-1 text-main" style="color: #0f172a;">${{ paid_amount|floatformat:2 }}</h2>
+            <div class="text-success small fw-semibold mt-2"><i class="fas fa-shield-alt me-1"></i>Securely processed</div>
         </div>
     </div>
     <div class="col-md-4">
-        <div class="card border-0 glass-card p-4 h-100">
-            <div class="d-flex align-items-center justify-content-between mb-2">
-                <div class="small fw-bold text-muted text-uppercase" style="letter-spacing: 0.5px;">Pending Balance</div>
-                <div class="text-warning bg-warning bg-opacity-10 p-2 rounded-3"><i class="fas fa-clock"></i></div>
+        <div class="card border-0 shadow-sm p-4 h-100 hover-scale" style="border-radius: 24px; background: linear-gradient(145deg, #ffffff, #fffbeb);">
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <div class="fw-bold text-muted text-uppercase" style="letter-spacing: 0.5px; font-size: 0.75rem;">Pending Balance</div>
+                <div class="text-warning bg-white shadow-sm p-2 rounded-circle d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;"><i class="fas fa-clock"></i></div>
             </div>
-            <h3 class="fw-bold mb-0 text-main">$10,000.00</h3>
-            <div class="text-muted x-small mt-2"><i class="fas fa-exclamation-circle text-warning me-1"></i>Next payment due in 10 days</div>
+            <h2 class="fw-bolder mb-1 text-main" style="color: #0f172a;">${{ pending_amount|floatformat:2 }}</h2>
+            <div class="text-warning small fw-semibold mt-2"><i class="fas fa-exclamation-circle me-1"></i>Awaiting payment</div>
         </div>
     </div>
     <div class="col-md-4">
-        <div class="card border-0 glass-card p-4 h-100">
-            <div class="d-flex align-items-center justify-content-between mb-2">
-                <div class="small fw-bold text-muted text-uppercase" style="letter-spacing: 0.5px;">Gross Contract Value</div>
-                <div class="text-primary bg-primary bg-opacity-10 p-2 rounded-3"><i class="fas fa-file-contract"></i></div>
+        <div class="card border-0 shadow-sm p-4 h-100 hover-scale" style="border-radius: 24px; background: linear-gradient(145deg, #ffffff, #eff6ff);">
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <div class="fw-bold text-muted text-uppercase" style="letter-spacing: 0.5px; font-size: 0.75rem;">Gross Contract Value</div>
+                <div class="text-primary bg-white shadow-sm p-2 rounded-circle d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;"><i class="fas fa-file-contract"></i></div>
             </div>
-            <h3 class="fw-bold mb-0 text-main">$25,000.00</h3>
-            <div class="text-muted x-small mt-2"><i class="fas fa-sync text-primary me-1"></i>Updated in real-time</div>
+            <h2 class="fw-bolder mb-1 text-main" style="color: #0f172a;">${{ gross_amount|floatformat:2 }}</h2>
+            <div class="text-primary small fw-semibold mt-2"><i class="fas fa-sync me-1"></i>Updated in real-time</div>
         </div>
     </div>
 </div>
 
 <!-- Invoices Ledger Matrix -->
-<div class="card border-0 glass-card">
-    <div class="card-header bg-transparent border-0 pt-4 px-4 pb-0 d-flex justify-content-between align-items-center">
-        <h5 class="fw-bold mb-0">Billing Transactions Ledger</h5>
-        <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2 text-uppercase">Payment History</span>
+<div class="card border-0 shadow-sm p-4" style="border-radius: 24px; background: #ffffff;">
+    <div class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom" style="border-color: rgba(0,0,0,0.05) !important;">
+        <h4 class="fw-bolder mb-0" style="color: #1e293b;">Billing Transactions Ledger</h4>
+        <span class="badge" style="background: linear-gradient(135deg, #eff6ff, #dbeafe); color: #1d4ed8; padding: 8px 16px; font-weight: 600; border-radius: 20px; font-size: 0.75rem;">Payment History</span>
     </div>
     <div class="card-body p-0">
         <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0 mt-3">
+            <table class="table table-hover align-middle mb-0 custom-table">
                 <thead>
-                    <tr class="bg-light">
-                        <th class="border-0 px-4 py-3 text-muted text-uppercase" style="font-size: 0.75rem;">Invoice No</th>
-                        <th class="border-0 py-3 text-muted text-uppercase" style="font-size: 0.75rem;">Project scope</th>
-                        <th class="border-0 py-3 text-muted text-uppercase" style="font-size: 0.75rem;">Due Date</th>
-                        <th class="border-0 py-3 text-muted text-uppercase" style="font-size: 0.75rem;">Billing Amount</th>
-                        <th class="border-0 py-3 text-muted text-uppercase" style="font-size: 0.75rem;">Billing Status</th>
-                        <th class="border-0 px-4 py-3 text-end text-muted text-uppercase" style="font-size: 0.75rem; width: 180px;">Action</th>
+                    <tr>
+                        <th class="border-0 px-4 py-3 text-muted text-uppercase fw-bold" style="font-size: 0.7rem; letter-spacing: 0.5px;">Invoice No</th>
+                        <th class="border-0 py-3 text-muted text-uppercase fw-bold" style="font-size: 0.7rem; letter-spacing: 0.5px;">Project Scope</th>
+                        <th class="border-0 py-3 text-muted text-uppercase fw-bold" style="font-size: 0.7rem; letter-spacing: 0.5px;">Due Date</th>
+                        <th class="border-0 py-3 text-muted text-uppercase fw-bold" style="font-size: 0.7rem; letter-spacing: 0.5px;">Billing Amount</th>
+                        <th class="border-0 py-3 text-muted text-uppercase fw-bold" style="font-size: 0.7rem; letter-spacing: 0.5px;">Billing Status</th>
+                        <th class="border-0 px-4 py-3 text-end text-muted text-uppercase fw-bold" style="font-size: 0.7rem; letter-spacing: 0.5px; width: 180px;">Action</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody class="border-top-0">
                     {% for inv in invoices %}
-                    <tr style="border-bottom: 1px solid var(--border-color);">
-                        <td class="px-4 font-monospace fw-bold text-main" style="font-size: 0.9rem;">
-                            {{ inv.invoice_number }}
+                    <tr class="transition-all hover-translate bg-white" style="border-bottom: 1px solid rgba(0,0,0,0.05);">
+                        <td class="px-4 py-4">
+                            <span class="font-monospace fw-bold text-main px-3 py-2 rounded-3 bg-light" style="font-size: 0.85rem;">{{ inv.invoice_number }}</span>
                         </td>
-                        <td>
-                            <div class="fw-bold text-main" style="font-size: 0.9rem;">{{ inv.project.title }}</div>
-                            <span class="x-small text-muted" style="font-size: 0.75rem;">Client: {{ inv.client.name }}</span>
+                        <td class="py-4">
+                            <div class="fw-bold text-main mb-1" style="font-size: 0.95rem;">{{ inv.project.title }}</div>
+                            <span class="text-muted d-flex align-items-center" style="font-size: 0.75rem;">
+                                <i class="fas fa-building me-1 opacity-50"></i> Client: {{ inv.client.name }}
+                            </span>
                         </td>
-                        <td>
-                            <div class="text-muted small"><i class="far fa-calendar-alt me-1"></i> {{ inv.due_date|date:"M d, Y" }}</div>
+                        <td class="py-4">
+                            <div class="d-inline-flex align-items-center px-3 py-2 rounded-pill bg-light text-muted fw-medium" style="font-size: 0.8rem;">
+                                <i class="far fa-calendar-alt me-2 text-primary"></i> {{ inv.due_date|date:"M d, Y" }}
+                            </div>
                         </td>
-                        <td>
-                            <div class="fw-bold text-main font-monospace">${{ inv.amount }}</div>
+                        <td class="py-4">
+                            <div class="fw-bold text-main fs-6">${{ inv.amount }}</div>
                         </td>
-                        <td>
+                        <td class="py-4">
                             {% if inv.status == 'paid' %}
-                                <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-1 text-uppercase" style="font-size: 0.65rem;">
-                                    <i class="fas fa-check-circle me-1"></i> Paid
+                                <span class="badge" style="background: linear-gradient(135deg, #dcfce7, #bbf7d0); color: #166534; padding: 6px 12px; border-radius: 8px; font-weight: 700; font-size: 0.7rem; letter-spacing: 0.5px;">
+                                    <i class="fas fa-check-circle me-1"></i> PAID
                                 </span>
                             {% else %}
-                                <span class="badge bg-warning-subtle text-warning border border-warning-subtle px-3 py-1 text-uppercase" style="font-size: 0.65rem;">
-                                    <i class="fas fa-exclamation-triangle me-1"></i> Pending
+                                <span class="badge" style="background: linear-gradient(135deg, #fef3c7, #fde68a); color: #92400e; padding: 6px 12px; border-radius: 8px; font-weight: 700; font-size: 0.7rem; letter-spacing: 0.5px;">
+                                    <i class="fas fa-exclamation-triangle me-1"></i> PENDING
                                 </span>
                             {% endif %}
                         </td>
-                        <td class="px-4 text-end">
+                        <td class="px-4 py-4 text-end">
                             {% if inv.status == 'pending' %}
-                                <button class="btn btn-sm btn-primary px-3 rounded-2 fw-semibold" data-bs-toggle="modal" data-bs-target="#payModal{{ inv.id }}">
+                                <button class="btn btn-primary px-4 py-2 fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#payModal{{ inv.id }}" style="border-radius: 10px; font-size: 0.8rem; background: linear-gradient(135deg, #2563eb, #1d4ed8); border: none; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)';" onmouseout="this.style.transform='translateY(0)';">
                                     Pay Now
                                 </button>
                             {% else %}
-                                <button class="btn btn-sm btn-light border border-light-subtle px-3 rounded-2 fw-semibold" onclick="alert('Downloading transaction record for invoice: {{ inv.invoice_number }}')">
-                                    Receipt <i class="fas fa-download ms-1" style="font-size: 0.75rem;"></i>
+                                <button class="btn bg-white border px-3 py-2 fw-bold shadow-sm text-main hover-bg-light" style="border-radius: 10px; font-size: 0.8rem; transition: all 0.2s;" onclick="downloadReceipt('{{ inv.id }}', '{{ inv.invoice_number }}')">
+                                    Receipt <i class="fas fa-download ms-2 text-primary"></i>
                                 </button>
                             {% endif %}
                         </td>
@@ -107,68 +113,134 @@
                     <!-- Payment Modal -->
                     <div class="modal fade" id="payModal{{ inv.id }}" tabindex="-1">
                         <div class="modal-dialog modal-dialog-centered">
-                            <div class="modal-content glass-card border-0 shadow-lg" style="border-radius: 20px;">
-                                <div class="modal-header border-0 pt-4 px-4 pb-0">
-                                    <h5 class="fw-bold text-main mb-0"><i class="fas fa-shield-alt text-success me-2"></i>Checkout Gateway</h5>
-                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            <div class="modal-content border-0 shadow-lg" style="border-radius: 24px; overflow: hidden;">
+                                <div class="modal-header border-0 pt-5 px-5 pb-0 bg-white">
+                                    <h4 class="fw-bolder text-main mb-0"><i class="fas fa-shield-alt text-success me-2"></i>Checkout Gateway</h4>
+                                    <button type="button" class="btn-close bg-light rounded-circle p-2" data-bs-dismiss="modal"></button>
                                 </div>
                                 <form onsubmit="event.preventDefault(); alert('Simulated payment of ${{ inv.amount }} processed successfully! Transaction Reference: TXN-{{ inv.id }}90283'); bootstrap.Modal.getInstance(document.getElementById('payModal{{ inv.id }}')).hide();">
-                                    <div class="modal-body p-4">
-                                        <div class="p-3 border rounded-3 bg-light mb-4">
-                                            <div class="d-flex justify-content-between align-items-center">
-                                                <span class="text-muted small">Billing Item</span>
-                                                <span class="fw-bold text-main small">{{ inv.invoice_number }}</span>
+                                    <div class="modal-body p-5">
+                                        <div class="p-4 border-0 rounded-4 mb-4" style="background: #f8fafc;">
+                                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                                <span class="text-muted small fw-bold text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.5px;">Billing Item</span>
+                                                <span class="fw-bold text-main font-monospace px-2 py-1 bg-white rounded">{{ inv.invoice_number }}</span>
                                             </div>
-                                            <div class="d-flex justify-content-between align-items-center mt-2">
-                                                <span class="text-muted small">Project Scope</span>
-                                                <span class="fw-semibold text-main small text-truncate" style="max-width: 200px;">{{ inv.project.title }}</span>
+                                            <div class="d-flex justify-content-between align-items-center mt-3">
+                                                <span class="text-muted small fw-bold text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.5px;">Project Scope</span>
+                                                <span class="fw-bold text-main small text-truncate" style="max-width: 200px;">{{ inv.project.title }}</span>
                                             </div>
-                                            <hr class="my-2">
+                                            <hr class="my-3" style="opacity: 0.05;">
                                             <div class="d-flex justify-content-between align-items-center">
                                                 <span class="fw-bold text-main">Gross Amount</span>
-                                                <span class="fw-bold text-primary font-monospace fs-5">${{ inv.amount }}</span>
+                                                <span class="fw-bolder text-primary fs-4">${{ inv.amount }}</span>
                                             </div>
                                         </div>
 
-                                        <div class="mb-3">
-                                            <label class="form-label">Name on Credit Card</label>
-                                            <input type="text" class="form-control" placeholder="e.g. John Doe" required>
+                                        <div class="mb-4">
+                                            <label class="form-label text-muted small fw-bold text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.5px;">Name on Credit Card</label>
+                                            <input type="text" class="form-control custom-input" placeholder="e.g. John Doe" required>
                                         </div>
-                                        <div class="mb-3">
-                                            <label class="form-label">Credit Card Number</label>
+                                        <div class="mb-4">
+                                            <label class="form-label text-muted small fw-bold text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.5px;">Credit Card Number</label>
                                             <div class="input-group">
-                                                <span class="input-group-text bg-transparent text-muted"><i class="far fa-credit-card"></i></span>
-                                                <input type="text" class="form-control" placeholder="4111 •••• •••• ••••" required>
+                                                <span class="input-group-text bg-light border-end-0 text-muted px-4" style="border-radius: 12px 0 0 12px;"><i class="far fa-credit-card"></i></span>
+                                                <input type="text" class="form-control custom-input border-start-0 ps-0" placeholder="4111 •••• •••• ••••" required style="border-radius: 0 12px 12px 0;">
                                             </div>
                                         </div>
-                                        <div class="row">
-                                            <div class="col-6 mb-3">
-                                                <label class="form-label">Expiration Date</label>
-                                                <input type="text" class="form-control" placeholder="MM/YY" required>
+                                        <div class="row g-3 mb-4">
+                                            <div class="col-6">
+                                                <label class="form-label text-muted small fw-bold text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.5px;">Expiration Date</label>
+                                                <input type="text" class="form-control custom-input" placeholder="MM/YY" required>
                                             </div>
-                                            <div class="col-6 mb-3">
-                                                <label class="form-label">CVV / Security Pin</label>
-                                                <input type="password" class="form-control" placeholder="•••" maxlength="4" required>
+                                            <div class="col-6">
+                                                <label class="form-label text-muted small fw-bold text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.5px;">CVV / Security Pin</label>
+                                                <input type="password" class="form-control custom-input" placeholder="•••" maxlength="4" required>
                                             </div>
                                         </div>
 
-                                        <div class="p-3 border border-dashed rounded-3 bg-light text-center small text-muted">
-                                            <i class="fas fa-lock text-success me-2"></i> Encrypted with 256-bit bank-level SSL protection.
+                                        <div class="p-3 border-0 rounded-3 text-center small fw-medium" style="background: #f0fdf4; color: #166534;">
+                                            <i class="fas fa-lock me-2"></i> Encrypted with 256-bit bank-level SSL protection.
                                         </div>
                                     </div>
-                                    <div class="modal-footer border-0 pb-4 px-4 pt-0">
-                                        <button type="button" class="btn btn-light px-4 rounded-2 border" data-bs-dismiss="modal">Cancel</button>
-                                        <button type="submit" class="btn btn-success px-4 rounded-2 fw-semibold">Confirm Payment</button>
+                                    <div class="modal-footer border-0 pb-5 px-5 pt-0 bg-white">
+                                        <button type="button" class="btn bg-light px-4 py-3 rounded-3 fw-bold text-muted hover-bg-light" data-bs-dismiss="modal">Cancel</button>
+                                        <button type="submit" class="btn btn-success px-4 py-3 rounded-3 fw-bold shadow-sm" style="background: linear-gradient(135deg, #10b981, #059669); border: none; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)';" onmouseout="this.style.transform='translateY(0)';">
+                                            Confirm Payment
+                                        </button>
                                     </div>
                                 </form>
                             </div>
                         </div>
                     </div>
+                    <!-- Hidden Receipt Template for PDF Export -->
+                    <div id="receiptTemplate{{ inv.id }}" style="display: none;">
+                        <div class="p-5" style="background: white; color: #1e293b; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #f1f5f9; padding-bottom: 20px; margin-bottom: 30px;">
+                                <div>
+                                    <h2 style="margin: 0; color: #3b82f6; font-weight: bold; font-size: 24px;">Pinesphere Tracker</h2>
+                                    <p style="margin: 5px 0 0; color: #64748b; font-size: 14px;">Official Payment Receipt</p>
+                                </div>
+                                <div style="text-align: right;">
+                                    <h3 style="margin: 0; color: #0f172a; font-size: 18px;">Receipt No: {{ inv.invoice_number }}</h3>
+                                    <p style="margin: 5px 0 0; color: #64748b; font-size: 14px;">Date: {{ inv.due_date|date:"M d, Y" }}</p>
+                                </div>
+                            </div>
+
+                            <div style="display: flex; margin-bottom: 40px;">
+                                <div style="flex: 1;">
+                                    <h4 style="margin: 0 0 10px; color: #64748b; font-size: 12px; text-transform: uppercase;">Billed To</h4>
+                                    <p style="margin: 0; font-size: 16px; font-weight: bold; color: #0f172a;">{{ inv.client.name }}</p>
+                                    <p style="margin: 5px 0 0; font-size: 14px; color: #475569;">{{ inv.client.email }}</p>
+                                </div>
+                                <div style="flex: 1;">
+                                    <h4 style="margin: 0 0 10px; color: #64748b; font-size: 12px; text-transform: uppercase;">Project Scope</h4>
+                                    <p style="margin: 0; font-size: 16px; font-weight: bold; color: #0f172a;">{{ inv.project.title }}</p>
+                                </div>
+                            </div>
+
+                            <table style="width: 100%; border-collapse: collapse; margin-bottom: 40px;">
+                                <thead>
+                                    <tr style="background: #f8fafc; border-bottom: 2px solid #e2e8f0;">
+                                        <th style="padding: 12px; text-align: left; font-size: 12px; color: #64748b; text-transform: uppercase;">Description</th>
+                                        <th style="padding: 12px; text-align: right; font-size: 12px; color: #64748b; text-transform: uppercase;">Amount</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr style="border-bottom: 1px solid #f1f5f9;">
+                                        <td style="padding: 16px 12px; font-size: 15px; color: #334155;">Project Milestone / Demo Payment</td>
+                                        <td style="padding: 16px 12px; text-align: right; font-size: 15px; font-weight: bold; color: #0f172a;">${{ inv.amount }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+
+                            <div style="display: flex; justify-content: flex-end; margin-bottom: 50px;">
+                                <div style="width: 300px;">
+                                    <div style="display: flex; justify-content: space-between; padding: 10px 0; border-top: 2px solid #e2e8f0; font-size: 18px; font-weight: bold; color: #0f172a;">
+                                        <span>Total Paid:</span>
+                                        <span>${{ inv.amount }}</span>
+                                    </div>
+                                    <div style="text-align: right; margin-top: 10px;">
+                                        <span style="display: inline-block; background: #dcfce7; color: #166534; padding: 5px 15px; border-radius: 20px; font-size: 12px; font-weight: bold;">PAID SECURELY</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div style="text-align: center; border-top: 1px solid #f1f5f9; padding-top: 20px; color: #94a3b8; font-size: 12px;">
+                                <p style="margin: 0;">Thank you for your business.</p>
+                                <p style="margin: 5px 0 0;">Generated by Pinesphere Project Tracker System.</p>
+                            </div>
+                        </div>
+                    </div>
                     {% empty %}
                     <tr>
-                        <td colspan="6" class="text-center py-5 text-muted">
-                            <img src="https://cdni.iconscout.com/illustration/premium/thumb/empty-wallet-4286467-3575970.png" style="width: 140px;" class="mb-3 opacity-60">
-                            <div>No invoices generated yet for your active workspace accounts.</div>
+                        <td colspan="6" class="text-center py-5">
+                            <div class="py-5">
+                                <div class="d-inline-flex align-items-center justify-content-center rounded-circle mb-4" style="width: 100px; height: 100px; background: #f8fafc;">
+                                    <i class="fas fa-file-invoice-dollar text-primary opacity-50" style="font-size: 2.5rem;"></i>
+                                </div>
+                                <h5 class="fw-bold text-main">No Invoices Found</h5>
+                                <p class="text-muted mb-0">You don't have any pending or paid invoices in your workspace.</p>
+                            </div>
                         </td>
                     </tr>
                     {% endfor %}
@@ -177,4 +249,77 @@
         </div>
     </div>
 </div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script>
+function downloadReceipt(invId, invoiceNumber) {
+    const element = document.getElementById('receiptTemplate' + invId);
+    
+    // Temporarily show the element to render it
+    element.style.display = 'block';
+    
+    const opt = {
+        margin:       0.5,
+        filename:     'Receipt_' + invoiceNumber + '.pdf',
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2 },
+        jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+    };
+
+    html2pdf().set(opt).from(element).save().then(() => {
+        // Hide it again after downloading
+        element.style.display = 'none';
+    });
+}
+</script>
+
+<style>
+/* Hover Effects */
+.hover-scale {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.hover-scale:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 20px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -5px rgba(0, 0, 0, 0.04) !important;
+}
+
+.hover-translate {
+    transition: all 0.2s ease;
+}
+.hover-translate:hover {
+    background-color: #f8fafc !important;
+    transform: translateX(4px);
+}
+
+.hover-bg-light:hover {
+    background-color: #f1f5f9 !important;
+}
+
+/* Custom Table Styling */
+.custom-table th {
+    background: transparent !important;
+    border-bottom: 2px solid #f1f5f9 !important;
+}
+.custom-table td {
+    vertical-align: middle;
+}
+
+/* Custom Input Styling */
+.custom-input {
+    padding: 12px 16px;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    background-color: #f8fafc;
+    color: #334155;
+    font-size: 0.95rem;
+    transition: all 0.2s ease;
+}
+
+.custom-input:focus {
+    outline: none;
+    border-color: #3b82f6;
+    background-color: #ffffff;
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+}
+</style>
 {% endblock %}

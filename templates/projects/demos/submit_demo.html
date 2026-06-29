@@ -8,8 +8,8 @@
 <div class="row justify-content-center mb-4">
     <div class="col-lg-8">
         <div class="d-flex align-items-center justify-content-between mb-4">
-            <h4 class="fw-bold mb-0"><i class="fas fa-video text-primary me-2"></i>Submit Demo to Client</h4>
-            <a href="{% url 'team_leader_projects' %}" class="btn btn-outline-secondary btn-sm">Cancel</a>
+            <h4 class="fw-bold mb-0"><i class="fas fa-video text-primary me-2" ></i>Submit Demo to Client</h4>
+            <a href="{% url 'my_demos' %}" class="btn btn-outline-secondary btn-sm">Cancel</a>
         </div>
 
         <div class="card border-0 shadow-sm rounded-4">
@@ -44,27 +44,12 @@
                         <div class="form-text">Allowed formats: MP4, MOV. Max size 50MB.</div>
                     </div>
 
-                    <div class="row g-3 mb-4">
-                        <div class="col-md-6">
-                            <label class="form-label fw-bold text-muted small text-uppercase">Payment Type</label>
-                            <select name="payment_type" class="form-select border-light-subtle shadow-sm" required>
-                                <option value="advance">Advance Payment</option>
-                                <option value="full">Full Payment</option>
-                            </select>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-bold text-muted small text-uppercase">Payment Amount (₹)</label>
-                            <input type="number" name="payment_amount" class="form-control border-light-subtle shadow-sm" placeholder="50000" required>
-                        </div>
-                    </div>
-
-                    <div class="mb-4">
-                        <label class="form-label fw-bold text-muted small text-uppercase">Payment Notes & Progress Details</label>
-                        <textarea name="payment_notes" class="form-control border-light-subtle shadow-sm" rows="3" placeholder="e.g. 50% completed, advance invoice generated"></textarea>
+                    <div class="alert alert-info mb-4" role="alert">
+                        <i class="fas fa-info-circle me-2"></i> Payment details will be added by the Project Manager upon final approval.
                     </div>
 
                     <div class="d-grid">
-                        <button type="submit" class="btn btn-primary btn-lg rounded-3 fw-bold">Submit Demo</button>
+                        <button type="submit" class="btn btn-primary btn-lg rounded-3 fw-bold" style="background: linear-gradient(135deg, #2563eb, #1d4ed8); border: none;">Submit Demo</button>
                     </div>
                 </form>
             </div>

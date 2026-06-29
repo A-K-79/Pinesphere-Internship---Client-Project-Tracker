@@ -28,6 +28,8 @@ DEBUG = True
 ALLOWED_HOSTS = ['*']
 
 
+
+
 # Application definition
 
 INSTALLED_APPS = [
@@ -63,6 +65,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'projects.context_processors.user_notifications',
             ],
         },
     },
@@ -128,6 +131,13 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 LOGIN_REDIRECT_URL = 'dashboard'
 LOGOUT_REDIRECT_URL = 'login'
 LOGIN_URL = 'login'
+
+
+
+#COST
+
+RAZORPAY_KEY_ID = "rzp_test_T74UjNLpKNa4sH"
+RAZORPAY_KEY_SECRET = "7yX940vhaw7IYgIJ9u2x4XW8"
 
 # CSRF Settings for Development
 CSRF_COOKIE_SECURE = False

@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}My Demo Submissions | Tracker{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h4 class="fw-bold mb-0"><i class="fas fa-video text-primary  me-2"></i>My Demo Submissions</h4>
+        <a href="{% url 'submit_demo' %}"
+   class="btn text-white rounded-3 shadow-sm px-4 py-2"
+   style="background: linear-gradient(135deg, #2563eb, #1d4ed8); border: none;">
+    <i class="fas fa-plus me-2"></i>Submit New Demo
+</a>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light text-muted small text-uppercase" style="letter-spacing: 0.5px;">
+                        <tr>
+                            <th class="ps-4 py-3">Project</th>
+                            <th class="py-3">Version</th>
+                            <th class="py-3">Links</th>
+                            <th class="py-3">Status</th>
+                            <th class="py-3 text-end pe-4">Date Submitted</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for demo in demos %}
+                        <tr>
+                            <td class="ps-4">
+                                <div class="fw-bold text-dark">{{ demo.project.title }}</div>
+                                <div class="small text-muted">{{ demo.client.company_name }}</div>
+                            </td>
+                            <td>
+                                <span class="badge bg-light text-dark border">v{{ demo.version }}</span>
+                            </td>
+                            <td>
+                                {% if demo.demo_url %}
+                                <a href="{{ demo.demo_url }}" target="_blank" class="small text-decoration-none d-block mb-1">
+                                    <i class="fas fa-external-link-alt text-primary me-1"></i>URL
+                                </a>
+                                {% endif %}
+                                {% if demo.demo_video %}
+                                <a href="{{ demo.demo_video.url }}" target="_blank" class="small text-decoration-none">
+                                    <i class="fas fa-play-circle text-success me-1"></i>Video
+                                </a>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if demo.status == 'pending_lead' %}
+                                    <span class="badge bg-warning text-dark"><i class="fas fa-clock me-1"></i>Pending Team Lead</span>
+                                {% elif demo.status == 'lead_rejected' %}
+                                    <span class="badge bg-danger" title="{{ demo.lead_rejection_reason }}"><i class="fas fa-times-circle me-1"></i>Rejected by Lead</span>
+                                {% elif demo.status == 'pending_manager' %}
+                                    <span class="badge bg-info"><i class="fas fa-user-tie me-1"></i>Pending PM</span>
+                                {% elif demo.status == 'manager_rejected' %}
+                                    <span class="badge bg-danger" title="{{ demo.manager_rejection_reason }}"><i class="fas fa-times-circle me-1"></i>Rejected by PM</span>
+                                {% elif demo.status == 'manager_accepted' %}
+                                    <span class="badge bg-primary"><i class="fas fa-check-double me-1"></i>PM Approved (Awaiting Client)</span>
+                                {% elif demo.status == 'client_approved' %}
+                                    <span class="badge bg-success"><i class="fas fa-check-circle me-1"></i>Client Approved</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">{{ demo.get_status_display }}</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end pe-4">
+                                <span class="text-muted small">{{ demo.created_at|date:"M d, Y" }}</span>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center py-5 text-muted">
+                                <i class="fas fa-film mb-3 text-light" style="font-size: 3rem;"></i>
+                                <p class="mb-0">You haven't submitted any demos yet.</p>
+                                <a href="{% url 'submit_demo' %}" class="btn btn-sm btn-outline-primary mt-3">Submit Your First Demo</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

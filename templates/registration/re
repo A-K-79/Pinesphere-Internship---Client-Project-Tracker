@@ -1,8 +1,8 @@
-{% extends 'base.html' %}
+<!-- {% extends 'base.html' %}
 {% load static %}
 
 {% block title %}Attendance Management | Tracker{% endblock %}
-
+6527 6589 0000 1005
 {% block content %}
 <!-- FullCalendar and Chart.js CDN -->
 <link href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css" rel="stylesheet">
@@ -1899,4 +1899,4 @@ id="attendanceTeamTable">
         }
     });
 </script>
-{% endblock %}
+{% endblock %} -->

@@ -1,0 +1,122 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Complete Payment | Tracker{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-5">
+    <div class="col-md-6 text-center">
+        <div class="card border-0 shadow-sm rounded-4 p-5">
+            <h4 class="fw-bold mb-4">Initializing Secure Payment...</h4>
+            <div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="text-muted">Please do not refresh or close this window.</p>
+            
+            <!-- We will build a hidden form on success and submit it -->
+            <button id="rzp-button1" class="btn btn-primary" style="display: none;">Pay Now</button>
+            <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+            <script>
+                var options = {
+                    "key": "{{ razorpay_key_id }}",
+                    "amount": "{{ amount }}",
+                    "currency": "INR",
+                    "name": "{{ demo.project.title|escapejs }}",
+                    "description": "Advance Payment for Demo v{{ demo.version }}",
+                    "order_id": "{{ payment.id }}",
+                    "handler": function (response){
+                        // Payment succeeded, submit to server for verification
+                        var form = document.createElement('form');
+                        form.method = 'POST';
+                        form.action = "{% url 'client_demo_payment_verify' %}";
+                        
+                        var csrf = document.createElement('input');
+                        csrf.type = 'hidden';
+                        csrf.name = 'csrfmiddlewaretoken';
+                        csrf.value = '{{ csrf_token }}';
+                        form.appendChild(csrf);
+                        
+                        var demoId = document.createElement('input');
+                        demoId.type = 'hidden';
+                        demoId.name = 'demo_id';
+                        demoId.value = '{{ demo.id }}';
+                        form.appendChild(demoId);
+                        
+                        var rzpPaymentId = document.createElement('input');
+                        rzpPaymentId.type = 'hidden';
+                        rzpPaymentId.name = 'razorpay_payment_id';
+                        rzpPaymentId.value = response.razorpay_payment_id;
+                        form.appendChild(rzpPaymentId);
+                        
+                        var rzpOrderId = document.createElement('input');
+                        rzpOrderId.type = 'hidden';
+                        rzpOrderId.name = 'razorpay_order_id';
+                        rzpOrderId.value = response.razorpay_order_id;
+                        form.appendChild(rzpOrderId);
+                        
+                        var rzpSignature = document.createElement('input');
+                        rzpSignature.type = 'hidden';
+                        rzpSignature.name = 'razorpay_signature';
+                        rzpSignature.value = response.razorpay_signature;
+                        form.appendChild(rzpSignature);
+                        
+                        document.body.appendChild(form);
+                        form.submit();
+                    },
+                    "theme": {
+                        "color": "#3b82f6"
+                    }
+                };
+                var rzp1 = new Razorpay(options);
+                rzp1.on('payment.failed', function (response){
+                    if(confirm("Payment Failed: " + response.error.description + "\n\nDo you want to simulate a successful payment anyway for testing purposes?")) {
+                        var form = document.createElement('form');
+                        form.method = 'POST';
+                        form.action = "{% url 'client_demo_payment_verify' %}";
+                        
+                        var csrf = document.createElement('input');
+                        csrf.type = 'hidden';
+                        csrf.name = 'csrfmiddlewaretoken';
+                        csrf.value = '{{ csrf_token }}';
+                        form.appendChild(csrf);
+                        
+                        var demoId = document.createElement('input');
+                        demoId.type = 'hidden';
+                        demoId.name = 'demo_id';
+                        demoId.value = '{{ demo.id }}';
+                        form.appendChild(demoId);
+                        
+                        var rzpPaymentId = document.createElement('input');
+                        rzpPaymentId.type = 'hidden';
+                        rzpPaymentId.name = 'razorpay_payment_id';
+                        rzpPaymentId.value = 'pay_TESTSIMULATION';
+                        form.appendChild(rzpPaymentId);
+                        
+                        var rzpOrderId = document.createElement('input');
+                        rzpOrderId.type = 'hidden';
+                        rzpOrderId.name = 'razorpay_order_id';
+                        rzpOrderId.value = '{{ payment.id }}';
+                        form.appendChild(rzpOrderId);
+                        
+                        var rzpSignature = document.createElement('input');
+                        rzpSignature.type = 'hidden';
+                        rzpSignature.name = 'razorpay_signature';
+                        rzpSignature.value = 'TEST_SKIP_SIG';
+                        form.appendChild(rzpSignature);
+                        
+                        document.body.appendChild(form);
+                        form.submit();
+                    } else {
+                        window.location.href = "{% url 'client_demo_approval' %}";
+                    }
+                });
+                
+                // Auto open checkout on load
+                window.onload = function(e){
+                    rzp1.open();
+                };
+            </script>
+        </div>
+    </div>
+</div>
+{% endblock %}

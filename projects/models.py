@@ -223,6 +223,7 @@ class Report(models.Model):
     content = models.TextField()
     attachment = models.FileField(upload_to='report_files/', null=True, blank=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    rejection_reason = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -533,8 +534,11 @@ def save_leave_balance(sender, instance, **kwargs):
 
 class DemoSubmission(models.Model):
     STATUS_CHOICES = [
-        ('pending', 'Pending Review'),
-        ('pm_approved', 'Approved by PM'),
+        ('pending_lead', 'Pending Lead Review'),
+        ('lead_rejected', 'Rejected by Team Lead'),
+        ('pending_manager', 'Pending PM Review'),
+        ('manager_rejected', 'Rejected by PM'),
+        ('manager_accepted', 'Accepted by PM'),
         ('client_approved', 'Approved by Client'),
         ('rejected', 'Rejected'),
     ]
@@ -553,7 +557,15 @@ class DemoSubmission(models.Model):
     payment_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     payment_notes = models.TextField(blank=True, null=True)
     
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    # Rejection reasons
+    lead_rejection_reason = models.TextField(blank=True, null=True)
+    manager_rejection_reason = models.TextField(blank=True, null=True)
+    
+    # PM payment entries
+    advance_payment = models.DecimalField(max_digits=10, decimal_places=2, default=0.00, blank=True, null=True)
+    full_payment = models.DecimalField(max_digits=10, decimal_places=2, default=0.00, blank=True, null=True)
+    
+    status = models.CharField(max_length=30, choices=STATUS_CHOICES, default='pending_lead')
     submitted_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='submitted_demos')
     
     version = models.PositiveIntegerField(default=1)

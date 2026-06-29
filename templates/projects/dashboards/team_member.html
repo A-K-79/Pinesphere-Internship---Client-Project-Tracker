@@ -71,6 +71,14 @@
         justify-content: center;
         border-radius: 12px;
     }
+    
+    .btn-welcome-action {
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .btn-welcome-action:hover {
+        transform: translateY(-2px) !important;
+        box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15) !important;
+    }
 </style>
 
 <!-- Welcome Banner -->
@@ -82,7 +90,10 @@
                     <div class="col-lg-8">
                         <span class="badge bg-white bg-opacity-20 text-white mb-2 px-3 py-2 text-uppercase fw-semibold" style="font-size: 0.75rem; letter-spacing: 0.5px;">Team Workspace</span>
                         <h2 class="fw-bold mb-2">Welcome Back, {{ user.get_full_name|default:user.username }}!</h2>
-                        <p class="mb-0 opacity-75">You have <strong class="text-white">{{ upcoming_deadlines.count }}</strong> pending tasks with upcoming deadlines. Let's make progress today!</p>
+                        <p class="mb-3 opacity-75">You have <strong class="text-white">{{ upcoming_deadlines.count }}</strong> pending tasks with upcoming deadlines. Let's make progress today!</p>
+                        <a href="{% url 'team_reports' %}?action=add" class="btn btn-light text-primary fw-bold px-4 py-2 rounded-pill shadow-sm btn-welcome-action">
+                            <i class="fas fa-plus me-1"></i> Add Report
+                        </a>
                     </div>
                     <div class="col-lg-4 text-end d-none d-lg-block">
                         <div class="bg-white bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 100px; height: 100px; backdrop-filter: blur(10px);">
@@ -272,6 +283,12 @@
             <div class="card-body">
                 <a href="{% url 'task_list' %}" class="btn btn-primary w-100 mb-3 py-2 d-flex align-items-center justify-content-center gap-2">
                     <i class="fas fa-clipboard-check"></i> View All My Tasks
+                </a>
+                <a href="{% url 'team_reports' %}?action=add" class="btn btn-outline-primary w-100 mb-3 py-2 d-flex align-items-center justify-content-center gap-2">
+                    <i class="fas fa-file-medical"></i> Add Report
+                </a>
+                <a href="{% url 'my_demos' %}" class="btn btn-outline-info w-100 mb-3 py-2 d-flex align-items-center justify-content-center gap-2">
+                    <i class="fas fa-video"></i> Submit Demo
                 </a>
                 <a href="{% url 'calendar' %}" class="btn btn-outline-secondary w-100 py-2 d-flex align-items-center justify-content-center gap-2">
                     <i class="far fa-calendar-alt"></i> Access Workspace Calendar

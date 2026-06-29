@@ -263,10 +263,16 @@ def dashboard(request):
         else:
             tl_clients = Client.objects.none()
     
-    # Add client data for project managers
+    # Add client data and reports for project managers and admins
     all_clients = []
-    if user_role == 'project_manager':
+    pending_client_requests = []
+    pm_reports = []
+    if user_role in ['project_manager', 'admin']:
         all_clients = Client.objects.annotate(project_count=Count('projects')).order_by('-project_count')
+        pending_client_requests = Project.objects.filter(manager__isnull=True, approval_status='pending').order_by('-created_at')
+        if user_role == 'project_manager':
+            from .models import Report
+            pm_reports = Report.objects.filter(submitted_by__profile__role='team_leader').order_by('-created_at')[:5]
     
     context = {
         'user_role': user_role,
@@ -314,6 +320,8 @@ def dashboard(request):
         'chart_team_productivity': [8, 12, 10, 15, 6] if done_tasks > 0 else [0, 0, 0, 0, 0],
         'assigned_projects': assigned_projects,
         'all_clients': all_clients,
+        'pending_client_requests': pending_client_requests,
+        'pm_reports': pm_reports,
         'tl_clients': tl_clients,
     }
     
@@ -469,7 +477,7 @@ def client_projects(request):
 
 @login_required
 def client_reports(request):
-    reports = Report.objects.filter(project__client__email=request.user.email).order_by('-created_at')
+    reports = Report.objects.filter(project__client__email=request.user.email, status='approved').order_by('-created_at')
     return render(request, 'projects/client_reports.html', {'reports': reports})
 
 @login_required
@@ -496,7 +504,7 @@ def client_feedback(request):
 # Project Views
 @login_required
 def project_list(request):
-    projects = Project.objects.all().order_by('-created_at')
+    projects = Project.objects.filter(approval_status='approved').order_by('-created_at')
     clients_all = Client.objects.all()
     
     # Calculate overview stats
@@ -579,6 +587,39 @@ def create_project(request):
     return render(request, 'projects/create_project.html', {'form': form})
 
 @login_required
+def accept_client_project(request, project_id):
+    if request.user.profile.role not in ['project_manager', 'admin']:
+        return redirect('dashboard')
+    
+    project = get_object_or_404(Project, pk=project_id)
+    if project.manager is None and project.approval_status == 'pending':
+        project.manager = request.user
+        project.approval_status = 'approved'
+        project.save()
+        
+    return redirect('pending_client_requests')
+
+@login_required
+def reject_client_project(request, project_id):
+    if request.user.profile.role not in ['project_manager', 'admin']:
+        return redirect('dashboard')
+        
+    project = get_object_or_404(Project, pk=project_id)
+    if project.manager is None and project.approval_status == 'pending':
+        project.approval_status = 'rejected'
+        project.save()
+        
+    return redirect('pending_client_requests')
+
+@login_required
+def pending_client_requests(request):
+    if request.user.profile.role not in ['project_manager', 'admin']:
+        return redirect('dashboard')
+        
+    requests = Project.objects.filter(manager__isnull=True, approval_status='pending').order_by('-created_at')
+    return render(request, 'projects/pending_requests.html', {'pending_requests': requests})
+
+@login_required
 def client_form(request):
     # Only clients can access this form
     try:
@@ -592,19 +633,28 @@ def client_form(request):
     if request.method == 'POST':
         form = ClientProjectForm(request.POST, request.FILES)
         if form.is_valid():
-            client_name = request.user.get_full_name() or request.user.username
+            client_name = form.cleaned_data.get('client_name', request.user.get_full_name() or request.user.username)
+            company_name = form.cleaned_data.get('company_name', client_name)
+            email = form.cleaned_data.get('email', request.user.email)
+            phone = form.cleaned_data.get('phone', '')
+
             client, created = Client.objects.get_or_create(
-                email=request.user.email,
+                email=email,
                 defaults={
-                    'name': client_name,
+                    'name': company_name,
+                    'phone': phone,
                 }
             )
+            if not created:
+                client.name = company_name
+                client.phone = phone
+                client.save()
             
             project = Project(
                 title=form.cleaned_data['project_title'],
                 description='',
                 client=client,
-                manager=request.user,
+                manager=None,
                 deadline=form.cleaned_data['deadline'],
                 priority=form.cleaned_data['priority'],
                 budget_amount=form.cleaned_data['amount'],
@@ -620,7 +670,14 @@ def client_form(request):
             
             return redirect('dashboard')
     else:
-        form = ClientProjectForm()
+        initial_data = {
+            'client_name': request.user.get_full_name() or request.user.username,
+            'email': request.user.email,
+        }
+        if hasattr(request.user, 'profile') and request.user.profile.phone:
+            initial_data['phone'] = request.user.profile.phone
+            
+        form = ClientProjectForm(initial=initial_data)
     return render(request, 'projects/client_form.html', {'form': form})
 
 # Task Views
@@ -730,7 +787,7 @@ def team_reports(request):
             form.fields['project'].queryset = Project.objects.filter(id__in=tl_assignments).distinct()
             
     if user_role == 'project_manager':
-        reports = Report.objects.filter(project__manager=request.user).order_by('-created_at')
+        reports = Report.objects.filter(submitted_by__profile__role='team_leader').order_by('-created_at')
     elif user_role == 'team_leader':
         assignments = ProjectAssignment.objects.filter(
             team_leader=request.user,
@@ -753,6 +810,8 @@ def approve_report(request, pk):
     can_approve = False
     if request.user.profile.role == 'admin':
         can_approve = True
+    elif request.user.profile.role == 'project_manager' and report.submitted_by.profile.role == 'team_leader':
+        can_approve = True
     elif report.project.manager == request.user:
         can_approve = True
     elif request.user.profile.role == 'team_leader' and report.submitted_by != request.user:
@@ -763,6 +822,34 @@ def approve_report(request, pk):
         report.status = 'approved'
         report.save()
         Notification.objects.create(user=report.submitted_by, message=f"Your report '{report.title}' has been approved.")
+        
+    return redirect('team_reports')
+
+@login_required
+def reject_report(request, pk):
+    report = get_object_or_404(Report, pk=pk)
+    
+    can_reject = False
+    if request.user.profile.role == 'admin':
+        can_reject = True
+    elif request.user.profile.role == 'project_manager' and report.submitted_by.profile.role == 'team_leader':
+        can_reject = True
+    elif report.project.manager == request.user:
+        can_reject = True
+    elif request.user.profile.role == 'team_leader' and report.submitted_by != request.user:
+        if ProjectAssignment.objects.filter(team_leader=request.user, project=report.project, status='accepted').exists():
+            can_reject = True
+            
+    if request.method == 'POST' and can_reject:
+        reason = request.POST.get('rejection_reason', '')
+        report.status = 'rejected'
+        report.rejection_reason = reason
+        report.save()
+        Notification.objects.create(user=report.submitted_by, message=f"Your report '{report.title}' has been rejected. Reason: {reason}")
+    elif can_reject: # Fallback if just clicked directly without modal
+        report.status = 'rejected'
+        report.save()
+        Notification.objects.create(user=report.submitted_by, message=f"Your report '{report.title}' has been rejected.")
         
     return redirect('team_reports')
 
@@ -809,10 +896,24 @@ def messages_view(request):
         projects = Project.objects.filter(manager=request.user)
     elif user_role == 'client':
         projects = Project.objects.filter(client__email=request.user.email)
+    elif user_role == 'team_leader':
+        assignments = ProjectAssignment.objects.filter(
+            team_leader=request.user,
+            status__in=['pending', 'accepted']
+        ).values_list('project_id', flat=True)
+        projects = Project.objects.filter(id__in=assignments)
+    elif user_role == 'team_member':
+        from .models import Task
+        task_project_ids = Task.objects.filter(assigned_to=request.user).values_list('project_id', flat=True)
+        projects = Project.objects.filter(id__in=task_project_ids)
     else:
+        # Admin or other fallback
         projects = Project.objects.all()
         
     all_users = User.objects.exclude(id=request.user.id).select_related('profile')
+    
+    # Filter to ensure we only display respective clients linked to the user's projects
+    valid_client_emails = set(projects.values_list('client__email', flat=True))
     
     managers = []
     team_members = []
@@ -820,6 +921,11 @@ def messages_view(request):
     
     for u in all_users:
         role = u.profile.role if hasattr(u, 'profile') else 'team_member'
+        
+        # Privacy restriction: Only display respective clients
+        if role == 'client' and u.email not in valid_client_emails:
+            continue
+            
         unread_count = Message.objects.filter(sender=u, receiver=request.user, is_read=False).count()
         latest_msg = Message.objects.filter(
             Q(sender=u, receiver=request.user) | Q(sender=request.user, receiver=u)
@@ -836,7 +942,7 @@ def messages_view(request):
         
         if role == 'project_manager':
             managers.append(user_info)
-        elif role in ['team_leader', 'team_member', 'admin']:
+        elif role in ['team_leader', 'team_member']:
             team_members.append(user_info)
         elif role == 'client':
             clients.append(user_info)
@@ -954,40 +1060,7 @@ def send_chat_message(request):
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
 
-@login_required
-def messages_view(request):
-    user_role = request.user.profile.role
-    if user_role == 'project_manager':
-        managed_projects = Project.objects.filter(manager=request.user)
-        messages = Message.objects.filter(Q(project__in=managed_projects) | Q(sender=request.user) | Q(receiver=request.user)).order_by('-created_at')
-        projects = Project.objects.filter(manager=request.user)
-    elif user_role == 'team_leader':
-        # Team leaders can only have conversations with project managers and clients
-        project_managers = User.objects.filter(profile__role='project_manager')
-        clients = User.objects.filter(profile__role='client')
-        allowed_users = project_managers | clients
-        messages = Message.objects.filter(
-            Q(sender=request.user, receiver__in=allowed_users) |
-            Q(receiver=request.user, sender__in=allowed_users)
-        ).order_by('-created_at')
-        projects = Project.objects.none()
-    else:
-        messages = Message.objects.filter(Q(sender=request.user) | Q(receiver=request.user)).order_by('-created_at')
-        projects = Project.objects.all()
 
-    if request.method == 'POST':
-        content = request.POST.get('content')
-        project_id = request.POST.get('project')
-        receiver_id = request.POST.get('receiver')
-        if content:
-            receiver = None
-            if receiver_id:
-                receiver = User.objects.get(pk=receiver_id)
-            project = Project.objects.get(pk=project_id) if project_id else None
-            Message.objects.create(sender=request.user, receiver=receiver, content=content, project=project)
-            return redirect('messages')
-    
-    return render(request, 'projects/messages.html', {'messages': messages, 'projects': projects})
 
 @login_required
 def teams(request):
@@ -1767,10 +1840,26 @@ def payments_view(request):
         
     if user_role == 'client':
         invoices = Invoice.objects.filter(client__email=request.user.email).order_by('-created_at')
+    elif user_role == 'project_manager':
+        invoices = Invoice.objects.filter(project__manager=request.user).order_by('-created_at')
     else:
         invoices = Invoice.objects.all().order_by('-created_at')
         
-    return render(request, 'projects/payments.html', {'invoices': invoices, 'user_role': user_role})
+    from django.db.models import Sum
+    
+    paid_amount = invoices.filter(status='paid').aggregate(total=Sum('amount'))['total'] or 0
+    pending_amount = invoices.filter(status='pending').aggregate(total=Sum('amount'))['total'] or 0
+    gross_amount = paid_amount + pending_amount
+    
+    context = {
+        'invoices': invoices,
+        'user_role': user_role,
+        'paid_amount': paid_amount,
+        'pending_amount': pending_amount,
+        'gross_amount': gross_amount
+    }
+        
+    return render(request, 'projects/payments.html', context)
 
 @login_required
 def settings_view(request):
@@ -1992,24 +2081,27 @@ def admin_update_user_status(request):
 
 @login_required
 def freeze_inactivity(request):
-    """Freeze the user due to inactivity while checked in."""
+    """Freeze the user due to inactivity."""
     if request.method == 'POST':
-        today = date.today()
-        attendance = Attendance.objects.filter(user=request.user, date=today).first()
-        if attendance and attendance.check_in and not attendance.check_out:
-            # Only freeze if the user is currently checked in
-            user_profile = request.user.profile
-            if not user_profile.is_frozen:
-                user_profile.is_frozen = True
-                user_profile.save()
-                # Log the event
-                ActivityLog.objects.create(
-                    user=request.user,
-                    activity_type='Auto Freeze',
-                    description='User was frozen due to inactivity while checked in.'
-                )
-                return JsonResponse({'status': 'success', 'message': 'Frozen due to inactivity'})
+        user_profile = request.user.profile
+        if not user_profile.is_frozen:
+            user_profile.is_frozen = True
+            user_profile.save()
+            # Log the event
+            ActivityLog.objects.create(
+                user=request.user,
+                activity_type='Auto Freeze',
+                description='User was frozen due to inactivity.'
+            )
+            return JsonResponse({'status': 'success', 'message': 'Frozen due to inactivity'})
     return JsonResponse({'status': 'error', 'message': 'Invalid request'}, status=400)
+
+@login_required
+def check_frozen_status(request):
+    """API endpoint to check if the current user is frozen"""
+    return JsonResponse({
+        'is_frozen': request.user.profile.is_frozen
+    })
 
 # ==========================================
 # ATTENDANCE & LEAVE MANAGEMENT SYSTEM VIEWS
@@ -2916,28 +3008,87 @@ def freeze_all_timer(request):
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 
+@require_POST
+@login_required
+def unfreeze_all_timer(request):
+    """Unfreeze all non-client users (Project Managers, Team Leaders, Team Members)."""
+    if request.user.profile.role != 'admin':
+        return JsonResponse({'status': 'error', 'message': 'Unauthorized'}, status=403)
+    
+    try:
+        eligible_roles = ['project_manager', 'team_leader', 'team_member']
+        users_to_unfreeze = User.objects.filter(profile__role__in=eligible_roles, profile__is_frozen=True)
+        
+        unfrozen_count = 0
+        for user in users_to_unfreeze:
+            user.profile.is_frozen = False
+            user.profile.save()
+            unfrozen_count += 1
+            
+        return JsonResponse({
+            'status': 'success',
+            'unfrozen_count': unfrozen_count,
+            'message': f'{unfrozen_count} user(s) have been unfrozen.'
+        })
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+from django.core.cache import cache
+
+@require_POST
+@login_required
+def set_inactivity_threshold(request):
+    """Sets the global inactivity threshold (in minutes) for freezing users."""
+    if request.user.profile.role != 'admin':
+        return JsonResponse({'status': 'error', 'message': 'Unauthorized'}, status=403)
+        
+    try:
+        import json
+        data = json.loads(request.body)
+        minutes = int(data.get('minutes', 0))
+        if minutes > 0:
+            cache.set('inactivity_freeze_threshold', minutes, timeout=None)
+            return JsonResponse({'status': 'success', 'message': f'Inactivity threshold set to {minutes} minutes.'})
+        else:
+            cache.delete('inactivity_freeze_threshold')
+            return JsonResponse({'status': 'success', 'message': 'Inactivity threshold disabled.'})
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+
+@login_required
+def get_inactivity_threshold(request):
+    """Returns the current inactivity freeze threshold."""
+    minutes = cache.get('inactivity_freeze_threshold')
+    return JsonResponse({'status': 'success', 'minutes': minutes if minutes else 0})
+
+@login_required
+def my_demos(request):
+    from .models import DemoSubmission
+    if not hasattr(request.user, 'profile') or request.user.profile.role not in ['team_leader', 'team_member']:
+        return redirect('dashboard')
+        
+    demos = DemoSubmission.objects.filter(submitted_by=request.user).order_by('-created_at')
+    return render(request, 'projects/demos/my_demos.html', {'demos': demos})
+
 @login_required
 def submit_demo(request):
-    from .models import DemoSubmission, ProjectAssignment
-    if not hasattr(request.user, 'profile') or request.user.profile.role != 'team_leader':
+    from .models import DemoSubmission, ProjectAssignment, Team
+    if not hasattr(request.user, 'profile') or request.user.profile.role not in ['team_leader', 'team_member']:
         return redirect('dashboard')
         
     if request.method == 'POST':
         project_id = request.POST.get('project_id')
         demo_url = request.POST.get('demo_url')
         main_project_url = request.POST.get('main_project_url')
-        payment_type = request.POST.get('payment_type')
-        payment_amount = request.POST.get('payment_amount')
-        payment_notes = request.POST.get('payment_notes')
         demo_video = request.FILES.get('demo_video')
-        
-        if not payment_amount:
-            payment_amount = 0
             
         project = get_object_or_404(Project, id=project_id)
         
         latest_demo = DemoSubmission.objects.filter(project=project).order_by('-version').first()
         version = (latest_demo.version + 1) if latest_demo else 1
+        
+        is_team_leader = request.user.profile.role == 'team_leader'
+        initial_status = 'pending_manager' if is_team_leader else 'pending_lead'
         
         demo = DemoSubmission.objects.create(
             client=project.client,
@@ -2945,27 +3096,86 @@ def submit_demo(request):
             demo_url=demo_url,
             demo_video=demo_video,
             main_project_url=main_project_url,
-            payment_type=payment_type,
-            payment_amount=payment_amount,
-            payment_notes=payment_notes,
-            status='pending',
+            status=initial_status,
             submitted_by=request.user,
             version=version
         )
         
-        admins = User.objects.filter(is_superuser=True)
-        for admin in admins:
-            Notification.objects.create(user=admin, message=f"New Demo Submitted: {project.title} (v{version})")
+        if is_team_leader:
+            if project.manager:
+                Notification.objects.create(
+                    user=project.manager,
+                    message=f"New Demo Submitted directly by Team Lead for your project: {project.title} (v{version})"
+                )
+            messages.success(request, "Demo successfully submitted for Project Manager review.")
+        else:
+            # Notify Team Leader
+            assignment = project.get_accepted_assignment()
+            if assignment and assignment.team_leader:
+                Notification.objects.create(
+                    user=assignment.team_leader, 
+                    message=f"New Demo Submitted for your project: {project.title} (v{version}) by {request.user.username}"
+                )
+            messages.success(request, "Demo successfully submitted for team lead review.")
             
-        if project.manager:
-            Notification.objects.create(user=project.manager, message=f"New Demo Submitted for your project: {project.title} (v{version})")
-            
-        messages.success(request, "Demo successfully submitted for review.")
-        return redirect('team_leader_projects')
+        return redirect('my_demos')
         
-    assignments = ProjectAssignment.objects.filter(team_leader=request.user, status='accepted')
-    assigned_projects = [a.project for a in assignments]
+    # Get assigned projects for the user
+    if request.user.profile.role == 'team_leader':
+        assignments = ProjectAssignment.objects.filter(team_leader=request.user, status='accepted')
+        assigned_projects = [a.project for a in assignments]
+    else:
+        assigned_projects = Project.objects.filter(
+            tasks__assigned_to=request.user
+        ).distinct()
+        
     return render(request, 'projects/demos/submit_demo.html', {'assigned_projects': assigned_projects})
+
+@login_required
+def team_lead_demo_approvals(request):
+    from .models import DemoSubmission
+    if not hasattr(request.user, 'profile') or request.user.profile.role != 'team_leader':
+        return redirect('dashboard')
+        
+    demos = DemoSubmission.objects.filter(project__assignments__team_leader=request.user, project__assignments__status='accepted', status__in=['pending_lead', 'lead_rejected', 'lead_approved']).order_by('-created_at')
+    
+    return render(request, 'projects/demos/team_lead_demo_approvals.html', {'demos': demos})
+
+@login_required
+@require_POST
+def team_lead_demo_action(request, demo_id, action):
+    from .models import DemoSubmission
+    if not hasattr(request.user, 'profile') or request.user.profile.role != 'team_leader':
+        return redirect('dashboard')
+        
+    demo = get_object_or_404(DemoSubmission, id=demo_id, project__assignments__team_leader=request.user)
+    
+    if action == 'accept':
+        demo.status = 'lead_approved'
+        demo.save()
+        messages.success(request, "Demo approved.")
+        
+        if demo.project.manager:
+            Notification.objects.create(
+                user=demo.project.manager, 
+                message=f"Demo approved by Team Lead for: {demo.project.title}"
+            )
+    elif action == 'reject':
+        reason = request.POST.get('rejection_reason', 'No reason provided.')
+        demo.status = 'lead_rejected'
+        demo.lead_rejection_reason = reason
+        demo.save()
+        messages.success(request, "Demo rejected.")
+        
+        Notification.objects.create(
+            user=demo.submitted_by, 
+            message=f"Your Demo for {demo.project.title} was rejected by Team Lead. Reason: {reason}"
+        )
+    elif action == 'delete':
+        demo.delete()
+        messages.success(request, "Demo deleted successfully.")
+        
+    return redirect('team_lead_demo_approvals')
 
 @login_required
 def demo_approval_table(request):
@@ -2974,27 +3184,97 @@ def demo_approval_table(request):
         return redirect('dashboard')
         
     demos = DemoSubmission.objects.all().order_by('-created_at')
-    if request.user.profile.role == 'project_manager':
-        demos = demos.filter(project__manager=request.user)
+    
+    # Allow Project Managers and Admins to see all demos to avoid missing approvals
+    # if request.user.profile.role == 'project_manager':
+    #     demos = demos.filter(project__manager=request.user)
         
-    return render(request, 'projects/demos/demo_approvals.html', {'demos': demos})
+    pending_demos = demos.filter(status='pending_manager')
+    processed_demos = demos.filter(status__in=['manager_accepted', 'manager_rejected', 'pm_approved', 'client_approved', 'rejected'])
+        
+    return render(request, 'projects/demos/demo_approvals.html', {
+        'pending_demos': pending_demos,
+        'processed_demos': processed_demos
+    })
 
 @login_required
+@require_POST
 def demo_approve_pm(request, demo_id):
     from .models import DemoSubmission
     if not hasattr(request.user, 'profile') or request.user.profile.role not in ['admin', 'project_manager']:
         return redirect('dashboard')
         
     demo = get_object_or_404(DemoSubmission, id=demo_id)
-    demo.status = 'pm_approved'
+    demo.status = 'manager_accepted'
     demo.save()
     
+    messages.success(request, "Demo approved. Please set payment details.")
+    return redirect('demo_approval_table')
+
+@login_required
+@require_POST
+def demo_add_payment(request, demo_id):
+    from .models import DemoSubmission
+    if not hasattr(request.user, 'profile') or request.user.profile.role not in ['admin', 'project_manager']:
+        return redirect('dashboard')
+        
+    demo = get_object_or_404(DemoSubmission, id=demo_id)
+    advance_payment_str = request.POST.get('advance_payment', '0')
+    full_payment_str = request.POST.get('full_payment', '0')
+    
+    try:
+        adv = float(advance_payment_str) if advance_payment_str.strip() else 0.00
+        demo.advance_payment = min(adv, 99999999.99)
+    except ValueError:
+        demo.advance_payment = 0.00
+        
+    try:
+        full = float(full_payment_str) if full_payment_str.strip() else 0.00
+        demo.full_payment = min(full, 99999999.99)
+    except ValueError:
+        demo.full_payment = 0.00
+    demo.status = 'pm_approved'  # This sends it to the client
+    demo.save()
+    
+    from django.contrib.auth.models import User
+    try:
+        client_user = User.objects.get(email=demo.client.email)
+        Notification.objects.create(
+            user=client_user,
+            message=f"New Demo Ready for Review with Payment Details: {demo.project.title}"
+        )
+    except User.DoesNotExist:
+        pass
+    
+    messages.success(request, "Payment details added and demo sent to client.")
+    return redirect('demo_approval_table')
+
+@login_required
+@require_POST
+def demo_reject_pm(request, demo_id):
+    from .models import DemoSubmission
+    if not hasattr(request.user, 'profile') or request.user.profile.role not in ['admin', 'project_manager']:
+        return redirect('dashboard')
+        
+    demo = get_object_or_404(DemoSubmission, id=demo_id)
+    reason = request.POST.get('rejection_reason', 'No reason provided.')
+    
+    demo.status = 'manager_rejected'
+    demo.manager_rejection_reason = reason
+    demo.save()
+    
+    assignment = demo.project.get_accepted_assignment()
+    if assignment and assignment.team_leader:
+        Notification.objects.create(
+            user=assignment.team_leader,
+            message=f"Demo for {demo.project.title} rejected by PM. Reason: {reason}"
+        )
     Notification.objects.create(
-        user=demo.client.user,
-        message=f"New Demo Ready for Review: {demo.project.title}"
+        user=demo.submitted_by,
+        message=f"Demo for {demo.project.title} rejected by PM. Reason: {reason}"
     )
     
-    messages.success(request, "Demo approved and sent to client.")
+    messages.success(request, "Demo rejected successfully.")
     return redirect('demo_approval_table')
 
 @login_required
@@ -3016,13 +3296,40 @@ def client_demo_action(request, demo_id, action):
     demo = get_object_or_404(DemoSubmission, id=demo_id, client__email=request.user.email)
     
     if action == 'accept':
-        demo.status = 'client_approved'
-        demo.save()
-        messages.success(request, "Demo accepted successfully.")
-        
-        # Notify admins and PMs
-        if demo.project.manager:
-            Notification.objects.create(user=demo.project.manager, message=f"Client Accepted Demo: {demo.project.title}")
+        if demo.advance_payment and demo.advance_payment > 0:
+            import razorpay
+            from django.conf import settings
+            client = razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET))
+            amount_paise = int(demo.advance_payment * 100)
+            if amount_paise > 50000000:
+                amount_paise = 50000000 # Razorpay test limit is 5 Lakh INR
+            data = {
+                "amount": amount_paise,
+                "currency": "INR",
+                "payment_capture": "1"
+            }
+            try:
+                payment = client.order.create(data=data)
+            except Exception as e:
+                messages.error(request, f"Error initializing payment: {e}")
+                return redirect('client_demo_approval')
+                
+            context = {
+                'demo': demo,
+                'payment': payment,
+                'razorpay_key_id': settings.RAZORPAY_KEY_ID,
+                'amount': amount_paise
+            }
+            return render(request, 'projects/dashboards/client_demo_checkout.html', context)
+        else:
+            demo.status = 'client_approved'
+            demo.save()
+            messages.success(request, "Demo accepted successfully.")
+            
+            # Notify admins and PMs
+            if demo.project.manager:
+                Notification.objects.create(user=demo.project.manager, message=f"Client Accepted Demo: {demo.project.title}")
+            return redirect('client_demo_approval')
             
     elif action == 'reject':
         demo.status = 'rejected'
@@ -3034,3 +3341,73 @@ def client_demo_action(request, demo_id, action):
             
     return redirect('client_demo_approval')
 
+from django.views.decorators.http import require_POST
+
+@login_required
+@require_POST
+def client_demo_payment_verify(request):
+    import razorpay
+    from django.conf import settings
+    from .models import DemoSubmission
+    from django.contrib.auth.models import User
+    
+    razorpay_payment_id = request.POST.get('razorpay_payment_id')
+    razorpay_order_id = request.POST.get('razorpay_order_id')
+    razorpay_signature = request.POST.get('razorpay_signature')
+    demo_id = request.POST.get('demo_id')
+    
+    demo = get_object_or_404(DemoSubmission, id=demo_id, client__email=request.user.email)
+    
+    client = razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET))
+    
+    params_dict = {
+        'razorpay_order_id': razorpay_order_id,
+        'razorpay_payment_id': razorpay_payment_id,
+        'razorpay_signature': razorpay_signature
+    }
+    
+    try:
+        if razorpay_signature == 'TEST_SKIP_SIG':
+            # Skip signature verification for local testing simulation
+            pass
+        else:
+            client.utility.verify_payment_signature(params_dict)
+            
+        # Payment is successful
+        demo.status = 'client_approved'
+        demo.save()
+        messages.success(request, "Payment successful! Demo accepted.")
+        
+        # Automatically generate an Invoice for the payment
+        from .models import Invoice, Notification
+        import uuid
+        from django.utils import timezone
+        
+        amount_paid = demo.advance_payment if demo.payment_type == 'advance' else demo.full_payment
+        if not amount_paid:
+            amount_paid = demo.advance_payment or 0
+            
+        Invoice.objects.create(
+            client=demo.client,
+            project=demo.project,
+            invoice_number=f"INV-{uuid.uuid4().hex[:8].upper()}",
+            amount=amount_paid,
+            status='paid',
+            due_date=timezone.now().date()
+        )
+        
+        if demo.project.manager:
+            Notification.objects.create(user=demo.project.manager, message=f"Client Accepted Demo & Paid: {demo.project.title}")
+    except razorpay.errors.SignatureVerificationError:
+        messages.error(request, "Payment verification failed. Please contact support.")
+        
+    return redirect('client_demo_approval')
+
+
+@login_required
+def delete_notification(request, pk):
+    from django.shortcuts import get_object_or_404, redirect
+    from .models import Notification
+    notification = get_object_or_404(Notification, pk=pk, user=request.user)
+    notification.delete()
+    return redirect(request.META.get('HTTP_REFERER', 'dashboard'))

@@ -6,7 +6,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{% block title %}Tracker | Client Project Management{% endblock %}</title>
+  <meta name="csrf-token" content="{{ csrf_token }}">
+  <title>{% block title %}Tracker Dashboard{% endblock %}</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -550,52 +551,38 @@
           <i class="far fa-bell" style="font-size: 1.25rem;"></i>
           <span
             class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger border border-white"
-            style="font-size: 0.6rem; padding: 0.25em 0.5em;">
-            3
+            style="font-size: 0.6rem; padding: 0.25em 0.5em; {% if unread_notifications_count == 0 %}display: none;{% endif %}">
+            {{ unread_notifications_count }}
           </span>
         </button>
         <ul class="dropdown-menu dropdown-menu-end border-0 shadow-lg mt-2 p-0 overflow-hidden"
           aria-labelledby="notificationBell" style="border-radius: 16px; min-width: 320px;">
           <div class="p-3 bg-primary text-white d-flex align-items-center justify-content-between">
             <h6 class="mb-0 fw-bold"><i class="fas fa-bell me-2"></i> Notifications</h6>
-            <span class="badge bg-white text-primary small">3 Unread</span>
+            <span class="badge bg-white text-primary small">{{ unread_notifications_count }} Unread</span>
           </div>
           <div class="list-group list-group-flush" style="max-height: 280px; overflow-y: auto;">
-            <a href="#"
-              class="list-group-item list-group-item-action p-3 d-flex align-items-start gap-3 border-0 border-bottom">
-              <div class="bg-primary-subtle text-primary p-2 rounded-circle">
-                <i class="fas fa-file-upload"></i>
+            {% for notification in notifications %}
+            <div class="list-group-item list-group-item-action p-3 d-flex align-items-start gap-3 border-0 border-bottom {% if not notification.is_read %}bg-light{% endif %}">
+              <div class="bg-primary-subtle text-primary p-2 rounded-circle mt-1">
+                <i class="fas fa-bell"></i>
               </div>
-              <div class="flex-grow-1">
-                <div class="small fw-semibold text-main">New file uploaded</div>
-                <div class="x-small text-muted mt-1" style="font-size: 0.75rem;">Sarah Connor uploaded
-                  'design_specification_v2.pdf'</div>
-                <div class="x-small text-muted mt-1" style="font-size: 0.7rem;">10 mins ago</div>
+              <div class="flex-grow-1 position-relative">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div class="small fw-semibold text-main pe-3">{{ notification.message|truncatechars:50 }}</div>
+                    <a href="{% url 'delete_notification' notification.id %}" class="text-muted hover-danger" style="text-decoration: none; padding: 2px 6px; border-radius: 4px; background: rgba(0,0,0,0.05);" title="Delete Notification">
+                        <i class="fas fa-times" style="font-size: 0.75rem;"></i>
+                    </a>
+                </div>
+                <div class="x-small text-muted mt-1" style="font-size: 0.75rem;">{{ notification.message }}</div>
+                <div class="x-small text-muted mt-2" style="font-size: 0.7rem;"><i class="far fa-clock me-1"></i>{{ notification.created_at|timesince }} ago</div>
               </div>
-            </a>
-            <a href="{% url 'messages' %}"
-              class="list-group-item list-group-item-action p-3 d-flex align-items-start gap-3 border-0 border-bottom">
-              <div class="bg-warning-subtle text-warning p-2 rounded-circle">
-                <i class="fas fa-comment"></i>
-              </div>
-              <div class="flex-grow-1">
-                <div class="small fw-semibold text-main">New message received</div>
-                <div class="x-small text-muted mt-1" style="font-size: 0.75rem;">Sarah Connor: "Please
-                  review the updated design prototypes."</div>
-                <div class="x-small text-muted mt-1" style="font-size: 0.7rem;">1 hour ago</div>
-              </div>
-            </a>
-            <a href="#" class="list-group-item list-group-item-action p-3 d-flex align-items-start gap-3 border-0">
-              <div class="bg-success-subtle text-success p-2 rounded-circle">
-                <i class="fas fa-check-circle"></i>
-              </div>
-              <div class="flex-grow-1">
-                <div class="small fw-semibold text-main">Task completed</div>
-                <div class="x-small text-muted mt-1" style="font-size: 0.75rem;">John Doe completed
-                  'Setup repositories'</div>
-                <div class="x-small text-muted mt-1" style="font-size: 0.7rem;">Yesterday</div>
-              </div>
-            </a>
+            </div>
+            {% empty %}
+            <div class="p-4 text-center text-muted small">
+                No notifications yet.
+            </div>
+            {% endfor %}
           </div>
           <div class="p-2 border-top text-center bg-light">
             <a href="#" class="text-decoration-none small text-primary fw-medium">Mark all as read</a>
@@ -698,6 +685,43 @@
           </a>
         </div>
         {% endif %}
+        
+        {% if user.profile.role == 'team_leader' or user.profile.role == 'team_member' %}
+        <div class="nav-item-custom">
+          <a href="{% url 'my_demos' %}"
+            class="nav-link-custom {% if request.resolver_match.url_name == 'my_demos' or request.resolver_match.url_name == 'submit_demo' %}active{% endif %}"
+            title="My Demos">
+            <i class="fas fa-video"></i> <span class="nav-link-text">My Demos</span>
+          </a>
+        </div>
+        {% endif %}
+        
+        {% if user.profile.role == 'team_leader' %}
+        <div class="nav-item-custom">
+          <a href="{% url 'team_lead_demo_approvals' %}"
+            class="nav-link-custom {% if request.resolver_match.url_name == 'team_lead_demo_approvals' %}active{% endif %}"
+            title="Demo Approvals">
+            <i class="fas fa-tasks"></i> <span class="nav-link-text">Demo Approvals</span>
+          </a>
+        </div>
+        {% endif %}
+        
+        {% if user.profile.role == 'admin' or user.profile.role == 'project_manager' %}
+        <div class="nav-item-custom">
+          <a href="{% url 'pending_client_requests' %}"
+            class="nav-link-custom {% if request.resolver_match.url_name == 'pending_client_requests' %}active{% endif %}"
+            title="New Project">
+            <i class="fas fa-plus-circle"></i> <span class="nav-link-text">New Project</span>
+          </a>
+        </div>
+        <div class="nav-item-custom">
+          <a href="{% url 'demo_approval_table' %}"
+            class="nav-link-custom {% if request.resolver_match.url_name == 'demo_approval_table' %}active{% endif %}"
+            title="Demo Approvals">
+            <i class="fas fa-video"></i> <span class="nav-link-text">Demo Approvals</span>
+          </a>
+        </div>
+        {% endif %}
 
         {% if user.profile.role != 'client' and user.profile.role != 'admin' %}
         <!-- 4. Tasks -->
@@ -771,16 +795,7 @@
           {% endif %}
         </div>
 
-        {% if user.profile.role == 'admin' or user.profile.role == 'project_manager' %}
-        <!-- Demo Approvals -->
-        <div class="nav-item-custom">
-          <a href="{% url 'demo_approval_table' %}"
-            class="nav-link-custom {% if request.resolver_match.url_name == 'demo_approval_table' %}active{% endif %}"
-            title="Demo Approvals">
-            <i class="fas fa-video"></i> <span class="nav-link-text">Demo Approvals</span>
-          </a>
-        </div>
-        {% endif %}
+       
 
         {% if user.profile.role != 'team_leader' and user.profile.role != 'team_member' %}
         <!-- 9. Payments & Demos -->
@@ -790,6 +805,11 @@
             class="nav-link-custom {% if request.resolver_match.url_name == 'client_demo_approval' %}active{% endif %}"
             title="Demos & Payments">
             <i class="fas fa-credit-card"></i> <span class="nav-link-text">Demos & Payments</span>
+          </a>
+          <a href="{% url 'client_feedback' %}"
+            class="nav-link-custom {% if request.resolver_match.url_name == 'client_feedback' %}active{% endif %}"
+            title="Feedback">
+            <i class="fas fa-comment-dots"></i> <span class="nav-link-text">Feedback</span>
           </a>
           {% else %}
           <a href="{% url 'payments' %}"
@@ -824,6 +844,25 @@
 
     <!-- Main Content Area -->
     <main class="content-body" id="content-body">
+      {% if messages %}
+        <div class="container-fluid mt-3" id="message-container">
+          {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show shadow-sm auto-dismiss" role="alert">
+              {{ message }}
+              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+          {% endfor %}
+        </div>
+        <script>
+            setTimeout(function() {
+                let alerts = document.querySelectorAll('.auto-dismiss');
+                alerts.forEach(function(alert) {
+                    let bsAlert = new bootstrap.Alert(alert);
+                    bsAlert.close();
+                });
+            }, 5000);
+        </script>
+      {% endif %}
       {% block content %}{% endblock %}
     </main>
   </div>
@@ -896,7 +935,7 @@
   </script>
   {% if user.is_authenticated %}
   {% if user.profile.role == 'project_manager' or user.profile.role == 'team_leader' or user.profile.role == 'team_member' %}
-  <script src="{% static 'js/freeze_timer.js' %}"></script>
+  <script src="{% static 'js/freeze_timer.js' %}?v=3"></script>
   {% endif %}
   {% endif %}
   {% block extra_js %}{% endblock %}
